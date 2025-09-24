@@ -77,6 +77,11 @@ export default function OverviewPage() {
     // Refresh auth state on component mount
     refresh();
 
+    // Wait for auth state to load
+    if (loading) {
+      return;
+    }
+
     if (!isAuthenticated) {
       console.log('User not authenticated, redirecting to login');
       router.push('/login');
@@ -196,6 +201,18 @@ export default function OverviewPage() {
   const leadsAcquired = conversationRatioData?.leadsConverted || 0;
   const chatbotEnquiries = totals?.messages || 0;
   const pendingConversations = totals ? Math.max(0, totals.visitors - leadsAcquired) : 0;
+
+  // Show loading while auth is loading
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center space-x-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render if user is not admin
   if (!user || user.role !== 'admin') {
