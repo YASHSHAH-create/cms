@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
 import User from '@/lib/models/User';
 
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+}
+
 // Temporarily disable authentication for testing
 export const GET = async (request: NextRequest) => {
   try {
@@ -18,6 +31,13 @@ export const GET = async (request: NextRequest) => {
       success: true,
       users: users,
       count: users.length
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      }
     });
 
   } catch (error) {

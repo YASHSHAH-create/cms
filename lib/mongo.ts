@@ -12,9 +12,11 @@ export async function connectMongo() {
     throw new Error('MONGODB_URI is missing. Check environment variables.');
   }
 
-  // Log connection attempt (without sensitive data)
-  console.log('Attempting MongoDB connection...');
-  console.log('Connection string format:', uri.split('@')[0] + '@[HIDDEN]');
+  // Only log on first connection attempt
+  if (mongoose.connection.readyState === 0) {
+    console.log('Attempting MongoDB connection...');
+    console.log('Connection string format:', uri.split('@')[0] + '@[HIDDEN]');
+  }
 
   // 1 = connected, 2 = connecting
   if (mongoose.connection.readyState === 1) {
