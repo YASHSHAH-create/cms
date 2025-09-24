@@ -370,79 +370,7 @@ export default function AdminVisitorsPage() {
 
     } catch (e: any) {
       console.error('API failed, using fallback data:', e);
-      
-      // Fallback to static data for submission
-      const fallbackVisitors = [
-        {
-          _id: '1',
-          name: 'Harshal Walanj',
-          email: 'harshal@example.com',
-          phone: '982993272',
-          organization: 'Samyog Health Foods Pvt Ltd',
-          service: 'Food Testing',
-          status: 'enquiry_required',
-          createdAt: '2025-09-23T11:13:13.756Z',
-          agentName: 'Sanjana Pawar',
-          isConverted: false
-        },
-        {
-          _id: '2',
-          name: 'Test User',
-          email: 'test@example.com',
-          phone: '9876543210',
-          organization: 'Test Company',
-          service: 'General Testing',
-          status: 'ongoing_process',
-          createdAt: '2025-09-23T11:13:00.000Z',
-          agentName: 'Sanjana Pawar',
-          isConverted: false
-        },
-        {
-          _id: '3',
-          name: 'Kalpesh Tiwari',
-          email: 'kalpesh@example.com',
-          phone: '9876543211',
-          organization: 'Tiwari Industries',
-          service: 'Environmental Testing',
-          status: 'qualified',
-          createdAt: '2025-09-23T10:30:00.000Z',
-          agentName: 'Admin',
-          isConverted: false
-        },
-        {
-          _id: '4',
-          name: 'Yash',
-          email: 'yash@example.com',
-          phone: '9876543212',
-          organization: 'Yash Corp',
-          service: 'Water Testing',
-          status: 'enquiry_required',
-          createdAt: '2025-09-23T09:15:00.000Z',
-          agentName: 'Admin',
-          isConverted: false
-        },
-        {
-          _id: '5',
-          name: 'Arun Shirke',
-          email: 'arun@example.com',
-          phone: '9876543213',
-          organization: 'Shirke Enterprises',
-          service: 'Food Testing',
-          status: 'converted',
-          createdAt: '2025-09-23T08:45:00.000Z',
-          agentName: 'Admin',
-          isConverted: true
-        }
-      ];
-      
-      setVisitors(fallbackVisitors);
-      setPagination({
-        page: 1,
-        limit: 50,
-        total: fallbackVisitors.length,
-        pages: 1
-      });
-      setError(null); // Clear error since we have fallback data
+      setError('Failed to load visitors from database');
     } finally {
       setLoading(false);
     }
@@ -897,6 +825,7 @@ export default function AdminVisitorsPage() {
   const summaryStats = useMemo(() => {
     if (!Array.isArray(visitors)) return { chatbot: 0, email: 0, calls: 0, website: 0 };
     
+    // Count all visitors by source (not just filtered ones)
     const chatbot = visitors.filter(v => v.source === 'chatbot').length;
     const email = visitors.filter(v => v.source === 'email').length;
     const calls = visitors.filter(v => v.source === 'calls').length;
