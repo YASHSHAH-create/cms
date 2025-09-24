@@ -358,7 +358,13 @@ export default function AdminVisitorsPage() {
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filters.status) params.append('status', filters.status);
 
+      console.log('🔍 Fetching visitors from:', `${API_BASE}/api/visitors?${params}`);
+      console.log('🔍 Headers:', headers);
+      
       const response = await fetch(`${API_BASE}/api/visitors?${params}`, { headers });
+      
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
 
       if (response.status === 401) {
         setError('Authentication failed. Please login again.');
@@ -369,7 +375,9 @@ export default function AdminVisitorsPage() {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to load visitors');
+        const errorText = await response.text();
+        console.error('❌ API Error:', errorText);
+        throw new Error(`Failed to load visitors: ${response.status} ${errorText}`);
       }
 
       const responseData = await response.json();
