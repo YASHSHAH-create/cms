@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     
     // Create sanjana user if not exists
     if (!sanjana) {
-      const hashedPassword = await bcrypt.hash('sanjana123', 10);
+      const hashedPassword = await bcrypt.hash('exec123', 10);
       const newUser = new User({
         username: 'sanjana',
         email: 'sanjana@envirocare.com',
@@ -29,6 +29,40 @@ export async function GET(request: NextRequest) {
       });
       await newUser.save();
       console.log('✅ Created Sanjana user');
+    }
+    
+    // Create shreyas user if not exists
+    const shreyas = await User.findOne({ username: 'shreyas' });
+    if (!shreyas) {
+      const hashedPassword = await bcrypt.hash('sales123', 10);
+      const newUser = new User({
+        username: 'shreyas',
+        email: 'shreyas@envirocare.com',
+        password: hashedPassword,
+        name: 'Shreyas Sales',
+        role: 'customer-executive',
+        isApproved: true,
+        isActive: true
+      });
+      await newUser.save();
+      console.log('✅ Created Shreyas user');
+    }
+    
+    // Create simple admin user if not exists
+    const simpleAdmin = await User.findOne({ username: 'admin' });
+    if (!simpleAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const newUser = new User({
+        username: 'admin',
+        email: 'admin@envirocare.com',
+        password: hashedPassword,
+        name: 'Admin User',
+        role: 'admin',
+        isApproved: true,
+        isActive: true
+      });
+      await newUser.save();
+      console.log('✅ Created simple admin user');
     }
     
     // Get all users

@@ -39,6 +39,15 @@ export default function TestLogin() {
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Login Test Page</h1>
       
+      <div className="bg-blue-50 p-4 rounded mb-6">
+        <h3 className="font-bold mb-2">Available Login Credentials:</h3>
+        <ul className="text-sm space-y-1">
+          <li><strong>Admin:</strong> admin / admin123</li>
+          <li><strong>Executive:</strong> sanjana / exec123</li>
+          <li><strong>Sales:</strong> shreyas / sales123</li>
+        </ul>
+      </div>
+      
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-2">Username:</label>
