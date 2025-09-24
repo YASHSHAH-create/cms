@@ -147,10 +147,9 @@ export default function AdminAgentsPage() {
     try {
       console.log('🔄 Loading agents data...');
       
-      // Load users
+      // Load users - simplified without auth
       const usersRes = await fetch(`${API_BASE}/api/auth/users`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

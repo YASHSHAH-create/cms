@@ -162,6 +162,10 @@ export default function OverviewPage() {
             ).length;
           });
           
+          // Calculate total and average for the chart
+          const chartTotal = dailyData.reduce((sum, count) => sum + count, 0);
+          const chartAverage = Math.round(chartTotal / 7);
+          
           setDailyVisitorsData({
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [{

@@ -348,7 +348,7 @@ export default function AdminVisitorsPage() {
     setError(null);
     
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = { 'Content-Type': 'application/json' };
       
       // Build query parameters
       const params = new URLSearchParams({
@@ -458,7 +458,6 @@ export default function AdminVisitorsPage() {
 
     try {
       const headers = { 
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
       const response = await fetch(`${API_BASE}/api/analytics/update-visitor-status`, {
@@ -501,7 +500,6 @@ export default function AdminVisitorsPage() {
       setError(null); // Clear any previous errors
       
       const headers = { 
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
       
@@ -607,7 +605,6 @@ export default function AdminVisitorsPage() {
 
     try {
       const headers = { 
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
       const response = await fetch(`${API_BASE}/api/analytics/update-lead-conversion`, {
