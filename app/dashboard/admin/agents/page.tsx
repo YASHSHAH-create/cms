@@ -84,7 +84,7 @@ export default function AdminAgentsPage() {
   const [approvedUsers, setApprovedUsers] = useState<User[]>([]);
 
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
-  const API_BASE = '';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
 
   // Debug: Log state changes
   useEffect(() => {
@@ -150,6 +150,7 @@ export default function AdminAgentsPage() {
       // Load users - simplified without auth
       const usersRes = await fetch(`${API_BASE}/api/auth/users`, {
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

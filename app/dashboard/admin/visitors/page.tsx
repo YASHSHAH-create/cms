@@ -137,14 +137,8 @@ export default function AdminVisitorsPage() {
     comments: '',
     amount: 0
   });
-  const [agents, setAgents] = useState<any[]>([
-    { _id: '1', name: 'Admin', email: 'admin@envirocare.com', role: 'admin' },
-    { _id: '2', name: 'Sanjana Pawar', email: 'sanjana@envirocare.com', role: 'executive' }
-  ]);
-  const [salesExecutives, setSalesExecutives] = useState<any[]>([
-    { _id: '1', name: 'Sales Executive 1', email: 'sales1@envirocare.com', role: 'sales' },
-    { _id: '2', name: 'Sales Executive 2', email: 'sales2@envirocare.com', role: 'sales' }
-  ]);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [salesExecutives, setSalesExecutives] = useState<any[]>([]);
   const [assigningAgent, setAssigningAgent] = useState<string | null>(null);
   const [assigningSalesExecutive, setAssigningSalesExecutive] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -163,13 +157,42 @@ export default function AdminVisitorsPage() {
   });
 
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
-  const API_BASE = '';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
 
   // Debug logging for agents and sales executives
   useEffect(() => {
     console.log('🔍 Current agents state:', agents.length, agents);
     console.log('🔍 Current sales executives state:', salesExecutives.length, salesExecutives);
   }, [agents, salesExecutives]);
+
+  const fetchAgents = useCallback(async () => {
+    try {
+      console.log('🔄 Fetching agents and sales executives...');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      };
+      
+      const [agentsResponse, salesExecutivesResponse] = await Promise.all([
+        fetch(`${API_BASE}/api/auth/agents`, { headers }),
+        fetch(`${API_BASE}/api/auth/sales-executives`, { headers })
+      ]);
+      
+      if (agentsResponse.ok) {
+        const agentsData = await agentsResponse.json();
+        setAgents(agentsData.users || []);
+        console.log('✅ Agents loaded:', agentsData.users?.length || 0);
+      }
+      
+      if (salesExecutivesResponse.ok) {
+        const salesData = await salesExecutivesResponse.json();
+        setSalesExecutives(salesData.users || []);
+        console.log('✅ Sales executives loaded:', salesData.users?.length || 0);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch agents:', error);
+    }
+  }, [API_BASE, token]);
 
 
   // Assign sales executive to visitor
@@ -280,7 +303,10 @@ export default function AdminVisitorsPage() {
     setError(null);
     
     try {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      };
       
       // Build query parameters
       const params = new URLSearchParams({
@@ -290,7 +316,7 @@ export default function AdminVisitorsPage() {
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filters.status) params.append('status', filters.status);
 
-      const response = await fetch(`${API_BASE}/api/visitors?${params}`, { headers });
+      const response = await fetch(`${API_BASE}/api/analytics/visitors-management?${params}`, { headers });
 
       if (response.ok) {
         const responseData = await response.json();
@@ -325,7 +351,8 @@ export default function AdminVisitorsPage() {
     }
 
     loadVisitors();
-  }, [API_BASE, pagination.page, pagination.limit, debouncedSearchTerm, filters.status, loadVisitors]);
+    fetchAgents();
+  }, [API_BASE, pagination.page, pagination.limit, debouncedSearchTerm, filters.status, loadVisitors, fetchAgents]);
 
   // Auto-refresh every 30 seconds to sync with real-time changes
   useEffect(() => {
@@ -377,9 +404,10 @@ export default function AdminVisitorsPage() {
     if (!token) return;
 
     try {
-      const headers = { 
-        'Content-Type': 'application/json'
-      };
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
       const response = await fetch(`${API_BASE}/api/analytics/update-visitor-status`, {
         method: 'PUT',
         headers,
@@ -419,9 +447,10 @@ export default function AdminVisitorsPage() {
       setIsUpdating(true);
       setError(null); // Clear any previous errors
       
-      const headers = { 
-        'Content-Type': 'application/json'
-      };
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
       
       // Prepare the update data with validation
       const updateData = {
@@ -524,9 +553,10 @@ export default function AdminVisitorsPage() {
     if (!token) return;
 
     try {
-      const headers = { 
-        'Content-Type': 'application/json'
-      };
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
       const response = await fetch(`${API_BASE}/api/analytics/update-lead-conversion`, {
         method: 'PUT',
         headers,
