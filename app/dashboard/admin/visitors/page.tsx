@@ -171,10 +171,10 @@ export default function AdminVisitorsPage() {
       console.log('🔄 Fetching agents...');
       const [agentsResponse, salesExecutivesResponse] = await Promise.all([
         fetch(`${API_BASE}/api/auth/agents`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 'Content-Type': 'application/json' }
         }),
         fetch(`${API_BASE}/api/auth/sales-executives`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 'Content-Type': 'application/json' }
         })
       ]);
       
