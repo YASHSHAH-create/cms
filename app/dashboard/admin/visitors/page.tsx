@@ -163,7 +163,7 @@ export default function AdminVisitorsPage() {
   });
 
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  const API_BASE = '';
 
   // Debug logging for agents and sales executives
   useEffect(() => {
