@@ -71,7 +71,7 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
 
   useEffect(() => {
     // Refresh auth state on component mount
@@ -126,7 +126,7 @@ export default function OverviewPage() {
       setError(null);
 
       try {
-        const headers = { Authorization: `Bearer ${token}` };
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Fetch all data in parallel
         const [
@@ -136,11 +136,11 @@ export default function OverviewPage() {
           dailyAnalysisRes,
           recentConversationsRes
         ] = await Promise.all([
-          fetch(`${API_BASE}/api/analytics/dashboard`, { headers }),
-          fetch(`${API_BASE}/api/analytics/daily-visitors`, { headers }),
-          fetch(`${API_BASE}/api/analytics/conversion-rate`, { headers }),
-          fetch(`${API_BASE}/api/analytics/daily-analysis`, { headers }),
-          fetch(`${API_BASE}/api/analytics/recent-conversations`, { headers })
+          fetch(`/api/analytics/dashboard`, { headers }),
+          fetch(`/api/analytics/daily-visitors`, { headers }),
+          fetch(`/api/analytics/conversion-rate`, { headers }),
+          fetch(`/api/analytics/daily-analysis`, { headers }),
+          fetch(`/api/analytics/recent-conversations`, { headers })
         ]);
 
         // Process dashboard data
