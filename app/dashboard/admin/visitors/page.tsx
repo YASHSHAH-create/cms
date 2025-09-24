@@ -358,13 +358,7 @@ export default function AdminVisitorsPage() {
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filters.status) params.append('status', filters.status);
 
-      console.log('🔍 Fetching visitors from:', `${API_BASE}/api/visitors?${params}`);
-      console.log('🔍 Headers:', headers);
-      
       const response = await fetch(`${API_BASE}/api/visitors?${params}`, { headers });
-      
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response ok:', response.ok);
 
       if (response.status === 401) {
         setError('Authentication failed. Please login again.');
@@ -375,15 +369,10 @@ export default function AdminVisitorsPage() {
       }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error:', errorText);
-        throw new Error(`Failed to load visitors: ${response.status} ${errorText}`);
+        throw new Error('Failed to load visitors');
       }
 
       const responseData = await response.json();
-      console.log('📊 Admin visitors data received:', responseData.items || responseData.visitors);
-      console.log('📊 First visitor details:', (responseData.items || responseData.visitors)?.[0]);
-      console.log('📊 First visitor subservice:', (responseData.items || responseData.visitors)?.[0]?.subservice);
       setVisitors(responseData.items || responseData.visitors || []);
       setPagination({
         page: pagination.page,
