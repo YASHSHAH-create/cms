@@ -142,7 +142,8 @@ export default function Home() {
   const loadVisitors = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.visitors.list();
+      // Get all visitors by setting a high limit
+      const data = await api.visitors.list({ limit: 1000 });
       console.log('📊 API Response:', data);
       setVisitors(data.items || data.visitors || []);
     } catch (e) {
