@@ -358,7 +358,7 @@ export default function AdminVisitorsPage() {
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filters.status) params.append('status', filters.status);
 
-      const response = await fetch(`${API_BASE}/api/analytics/visitors-management?${params}`, { headers });
+      const response = await fetch(`${API_BASE}/api/visitors?${params}`, { headers });
 
       if (response.status === 401) {
         setError('Authentication failed. Please login again.');
@@ -373,15 +373,15 @@ export default function AdminVisitorsPage() {
       }
 
       const responseData = await response.json();
-      console.log('📊 Admin visitors data received:', responseData.visitors);
-      console.log('📊 First visitor details:', responseData.visitors?.[0]);
-      console.log('📊 First visitor subservice:', responseData.visitors?.[0]?.subservice);
-      setVisitors(responseData.visitors || []);
-      setPagination(responseData.pagination || {
-        page: 1,
-        limit: 50,
-        total: 0,
-        pages: 0
+      console.log('📊 Admin visitors data received:', responseData.items || responseData.visitors);
+      console.log('📊 First visitor details:', (responseData.items || responseData.visitors)?.[0]);
+      console.log('📊 First visitor subservice:', (responseData.items || responseData.visitors)?.[0]?.subservice);
+      setVisitors(responseData.items || responseData.visitors || []);
+      setPagination({
+        page: pagination.page,
+        limit: pagination.limit,
+        total: responseData.total || 0,
+        pages: Math.ceil((responseData.total || 0) / pagination.limit)
       });
 
     } catch (e: any) {
