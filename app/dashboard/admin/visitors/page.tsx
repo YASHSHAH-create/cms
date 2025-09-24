@@ -137,8 +137,14 @@ export default function AdminVisitorsPage() {
     comments: '',
     amount: 0
   });
-  const [agents, setAgents] = useState<any[]>([]);
-  const [salesExecutives, setSalesExecutives] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([
+    { _id: '1', name: 'Admin', email: 'admin@envirocare.com', role: 'admin' },
+    { _id: '2', name: 'Sanjana Pawar', email: 'sanjana@envirocare.com', role: 'executive' }
+  ]);
+  const [salesExecutives, setSalesExecutives] = useState<any[]>([
+    { _id: '1', name: 'Sales Executive 1', email: 'sales1@envirocare.com', role: 'sales' },
+    { _id: '2', name: 'Sales Executive 2', email: 'sales2@envirocare.com', role: 'sales' }
+  ]);
   const [assigningAgent, setAssigningAgent] = useState<string | null>(null);
   const [assigningSalesExecutive, setAssigningSalesExecutive] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -165,26 +171,6 @@ export default function AdminVisitorsPage() {
     console.log('🔍 Current sales executives state:', salesExecutives.length, salesExecutives);
   }, [agents, salesExecutives]);
 
-  // Fetch agents (executives) with their service assignments
-  const fetchAgents = async () => {
-    try {
-      console.log('🔄 Setting fallback agents data...');
-      
-      // Set fallback agents data immediately (no API calls)
-      setAgents([
-        { _id: '1', name: 'Admin', email: 'admin@envirocare.com', role: 'admin' },
-        { _id: '2', name: 'Sanjana Pawar', email: 'sanjana@envirocare.com', role: 'executive' }
-      ]);
-      setSalesExecutives([
-        { _id: '1', name: 'Sales Executive 1', email: 'sales1@envirocare.com' },
-        { _id: '2', name: 'Sales Executive 2', email: 'sales2@envirocare.com' }
-      ]);
-      
-      console.log('✅ Fallback agents data set successfully');
-    } catch (error) {
-      console.error('❌ Error setting fallback agents:', error);
-    }
-  };
 
   // Assign sales executive to visitor
   const assignSalesExecutiveToVisitor = async (visitorId: string, salesExecutiveId: string, salesExecutiveName: string) => {
@@ -339,7 +325,6 @@ export default function AdminVisitorsPage() {
     }
 
     loadVisitors();
-    fetchAgents();
   }, [API_BASE, pagination.page, pagination.limit, debouncedSearchTerm, filters.status, loadVisitors]);
 
   // Auto-refresh every 30 seconds to sync with real-time changes
