@@ -27,8 +27,16 @@ export async function connectMongo() {
   }
 
   try {
-    // Use default options for maximum compatibility
-    connectingPromise = mongoose.connect(uri);
+    // Use optimized options for serverless environments
+    connectingPromise = mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000, // 10 second timeout
+      socketTimeoutMS: 45000, // 45 second timeout
+      bufferCommands: false, // Disable mongoose buffering
+      bufferMaxEntries: 0, // Disable mongoose buffering
+      maxPoolSize: 1, // Maintain only one connection
+      minPoolSize: 0, // Allow connection to close
+      maxIdleTimeMS: 30000, // Close connections after 30 seconds
+    });
     await connectingPromise;
     console.log('✅ MongoDB connected successfully at', new Date().toISOString());
     console.log('Database:', mongoose.connection.db.databaseName);

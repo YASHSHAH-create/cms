@@ -92,57 +92,76 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/visitors - Get visitors (with authentication)
+// GET /api/visitors - Get visitors (optimized for serverless)
 export async function GET(request: NextRequest) {
   try {
     console.log('🔄 GET /api/visitors - Fetching visitors list');
     
-    await connectMongo();
+    // Set timeout for the entire operation
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 25000); // 25 second timeout
+    });
     
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const q = searchParams.get('q') || '';
+    const operationPromise = async () => {
+      await connectMongo();
+      
+      const { searchParams } = new URL(request.url);
+      const page = parseInt(searchParams.get('page') || '1');
+      const limit = parseInt(searchParams.get('limit') || '10'); // Reduced default limit
+      const q = searchParams.get('q') || '';
+      
+      const n = Math.min(Math.max(limit, 1), 50); // Reduced max limit
+      const p = Math.max(page, 1);
+      let filter = {};
+      
+      if (q) {
+        const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        filter = { 
+          $or: [
+            { name: rx }, 
+            { email: rx }, 
+            { phone: rx }, 
+            { organization: rx },
+            { service: rx },
+            { status: rx }
+          ] 
+        };
+        console.log('🔍 Search filter applied:', filter);
+      }
+      
+      console.log('📊 Fetching visitors with filter:', filter);
+      
+      // Optimize query with projection and limit
+      const items = await Visitor.find(filter)
+        .select('name email phone organization service status createdAt agentName')
+        .sort({ createdAt: -1 })
+        .skip((p - 1) * n)
+        .limit(n)
+        .lean()
+        .maxTimeMS(10000); // 10 second query timeout
+      
+      // Get total count with timeout
+      const total = await Visitor.countDocuments(filter).maxTimeMS(5000);
+      
+      console.log(`✅ Found ${items.length} visitors (page ${p}/${Math.ceil(total / n)})`);
+      console.log(`📊 Total visitors in database: ${total}`);
+      
+      return { total, page: p, pageSize: n, items };
+    };
     
-    const n = Math.min(Math.max(limit, 1), 200);
-    const p = Math.max(page, 1);
-    let filter = {};
-    
-    if (q) {
-      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter = { 
-        $or: [
-          { name: rx }, 
-          { email: rx }, 
-          { phone: rx }, 
-          { organization: rx },
-          { region: rx },
-          { service: rx },
-          { subservice: rx },
-          { agentName: rx },
-          { salesExecutiveName: rx },
-          { status: rx },
-          { enquiryDetails: rx },
-          { comments: rx },
-          { source: rx }
-        ] 
-      };
-      console.log('🔍 Search filter applied:', filter);
-    }
-    
-    console.log('📊 Fetching visitors with filter:', filter);
-    const [items, total] = await Promise.all([
-      Visitor.find(filter).sort({ createdAt: -1 }).skip((p - 1) * n).limit(n).lean(),
-      Visitor.countDocuments(filter)
-    ]);
-    
-    console.log(`✅ Found ${items.length} visitors (page ${p}/${Math.ceil(total / n)})`);
-    console.log(`📊 Total visitors in database: ${total}`);
-    
-    return NextResponse.json({ total, page: p, pageSize: n, items });
+    const result = await Promise.race([operationPromise(), timeoutPromise]);
+    return NextResponse.json(result);
 
   } catch (error: any) {
     console.error('❌ Visitors list error:', error);
-    return NextResponse.json({ ok: false, message: 'Failed to list visitors' }, { status: 500 });
+    
+    // Return empty result instead of error for better UX
+    return NextResponse.json({ 
+      total: 0, 
+      page: 1, 
+      pageSize: 10, 
+      items: [],
+      error: 'Database connection timeout. Please try again.' 
+    });
   }
 }
