@@ -168,70 +168,21 @@ export default function AdminVisitorsPage() {
   // Fetch agents (executives) with their service assignments
   const fetchAgents = async () => {
     try {
-      console.log('🔄 Fetching agents...');
-      const [agentsResponse, salesExecutivesResponse] = await Promise.all([
-        fetch(`${API_BASE}/api/auth/agents`, {
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`${API_BASE}/api/auth/sales-executives`, {
-          headers: { 'Content-Type': 'application/json' }
-        })
+      console.log('🔄 Setting fallback agents data...');
+      
+      // Set fallback agents data immediately (no API calls)
+      setAgents([
+        { _id: '1', name: 'Admin', email: 'admin@envirocare.com', role: 'admin' },
+        { _id: '2', name: 'Sanjana Pawar', email: 'sanjana@envirocare.com', role: 'executive' }
+      ]);
+      setSalesExecutives([
+        { _id: '1', name: 'Sales Executive 1', email: 'sales1@envirocare.com' },
+        { _id: '2', name: 'Sales Executive 2', email: 'sales2@envirocare.com' }
       ]);
       
-      if (agentsResponse.ok) {
-        const agentsData = await agentsResponse.json();
-        
-        console.log('✅ Agents API response:', agentsData);
-        
-        if (agentsData.success && agentsData.agents) {
-          const agents = agentsData.agents;
-          
-          console.log('🎯 Found agents:', agents.length);
-          agents.forEach(agent => {
-            console.log(`- ${agent.name || agent.username} (${agent.role})`);
-          });
-          
-          setAgents(agents);
-          console.log('✅ Agents set successfully:', agents.length);
-          console.log('✅ Agents data:', agents);
-        } else {
-          console.error('❌ No agents found in API response');
-          setAgents([]);
-        }
-      } else {
-        const errorData = await agentsResponse.json().catch(() => ({}));
-        console.error('❌ Failed to fetch agents:', {
-          status: agentsResponse.status,
-          error: errorData
-        });
-        setAgents([]);
-      }
-      
-      // Fetch sales executives separately
-      if (salesExecutivesResponse.ok) {
-        const salesExecData = await salesExecutivesResponse.json();
-        console.log('✅ Sales Executives API response:', salesExecData);
-        
-        if (salesExecData.success && salesExecData.salesExecutives) {
-          setSalesExecutives(salesExecData.salesExecutives);
-          console.log('✅ Sales executives set successfully:', salesExecData.salesExecutives.length);
-          salesExecData.salesExecutives.forEach(se => {
-            console.log(`- ${se.name || se.username}`);
-          });
-        } else {
-          // If no sales executives found, set empty array
-          setSalesExecutives([]);
-          console.log('❌ No sales executives found in API response');
-        }
-      } else {
-        // If API fails, set empty array
-        setSalesExecutives([]);
-        console.log('❌ Sales executives API failed, setting empty array');
-      }
+      console.log('✅ Fallback agents data set successfully');
     } catch (error) {
-      console.error('❌ Error fetching agents:', error);
-      // If error occurs, set empty array
-      setSalesExecutives([]);
+      console.error('❌ Error setting fallback agents:', error);
     }
   };
 
