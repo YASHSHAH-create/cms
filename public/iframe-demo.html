@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eva Chatbot - Iframe Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .demo-section {
+            margin: 40px 0;
+            padding: 30px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .iframe-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .chatbot-iframe {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 400px;
+            height: 600px;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .feature h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Eva Chatbot - Iframe Integration Demo</h1>
+        
+        <div class="demo-section">
+            <h2>Live Demo</h2>
+            <p>This is how Eva chatbot looks when embedded as an iframe:</p>
+            <div class="iframe-container">
+                <iframe 
+                    src="http://localhost:3000/chatbot" 
+                    class="chatbot-iframe"
+                    title="Eva Chatbot">
+                </iframe>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Integration Code</h2>
+            <p>Use this code to embed Eva chatbot on any website:</p>
+            <div class="code-block">
+&lt;iframe 
+  src="http://localhost:3000/chatbot" 
+  width="400" 
+  height="600" 
+  frameborder="0"
+  style="border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);"
+  title="Eva Chatbot"&gt;
+&lt;/iframe&gt;
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🎨 Modern Design</h3>
+                <p>Clean, professional interface with Envirocare Labs branding</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Responsive</h3>
+                <p>Works perfectly on desktop, tablet, and mobile devices</p>
+            </div>
+            <div class="feature">
+                <h3>🔧 Easy Integration</h3>
+                <p>Simple iframe code to embed on any website</p>
+            </div>
+            <div class="feature">
+                <h3>⚡ Fast Loading</h3>
+                <p>Optimized for quick loading and smooth interactions</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Features</h2>
+            <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>✅ Visitor registration with name, email, and phone</li>
+                <li>✅ Real-time chat interface</li>
+                <li>✅ FAQ search functionality</li>
+                <li>✅ Bottom navigation (Home, Chat, FAQ, Menu)</li>
+                <li>✅ Envirocare Labs branding and Eva AI assistant</li>
+                <li>✅ Modern emerald/teal color scheme</li>
+                <li>✅ Poppins font for clean typography</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

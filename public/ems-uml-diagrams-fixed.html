@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS System - UML Diagrams (Fixed)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: white;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; padding: 20px; border-bottom: 3px solid #2d4891; }
+        .header h1 { color: #2d4891; font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 1.1rem; }
+        .diagram-section { margin-bottom: 60px; page-break-inside: avoid; }
+        .diagram-header { color: #2d4891; font-size: 1.8rem; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-left: 5px solid #2d4891; }
+        .diagram-content { padding: 20px; background: white; border: 1px solid #ddd; border-radius: 5px; margin: 20px 0; }
+        .mermaid { text-align: center; }
+        .export-buttons { text-align: center; margin: 40px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        .export-btn { background: #2d4891; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 1rem; cursor: pointer; margin: 0 10px; }
+        .export-btn:hover { background: #1e3a8a; }
+        .export-btn.secondary { background: #059669; }
+        .export-btn.secondary:hover { background: #047857; }
+        @media print { .export-buttons { display: none; } body { padding: 0; } .diagram-section { margin-bottom: 40px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ EMS System UML Diagrams</h1>
+            <p>Environmental Management System - Complete UML Documentation</p>
+        </div>
+
+        <div class="export-buttons">
+            <button class="export-btn" onclick="window.print()">🖨️ Print/Export to PDF</button>
+            <button class="export-btn secondary" onclick="reloadDiagrams()">🔄 Reload Diagrams</button>
+        </div>
+
+        <!-- Class Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">📊 Class Diagram - System Architecture & Data Models</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="classDiagram">
+                    classDiagram
+                        class User {
+                            +String _id
+                            +String username
+                            +String email
+                            +String password
+                            +String role
+                            +String name
+                            +Date createdAt
+                            +Date updatedAt
+                            +login(credentials)
+                            +logout()
+                            +updateProfile(data)
+                            +checkPermissions()
+                        }
+
+                        class Admin {
+                            +String adminId
+                            +String permissions
+                            +manageUsers()
+                            +viewAnalytics()
+                            +systemSettings()
+                            +generateReports()
+                        }
+
+                        class Executive {
+                            +String execId
+                            +String department
+                            +viewPersonalMetrics()
+                            +manageChats()
+                            +handleEnquiries()
+                        }
+
+                        class Visitor {
+                            +String visitorId
+                            +String name
+                            +String email
+                            +String phone
+                            +Date visitDate
+                            +register()
+                            +accessChatbot()
+                            +searchFAQ()
+                        }
+
+                        class Enquiry {
+                            +String _id
+                            +String visitorId
+                            +String subject
+                            +String message
+                            +String status
+                            +Date createdAt
+                            +String assignedTo
+                            +create()
+                            +update()
+                            +assignTo(user)
+                            +close()
+                        }
+
+                        class ChatMessage {
+                            +String _id
+                            +String sessionId
+                            +String sender
+                            +String message
+                            +String type
+                            +Date timestamp
+                            +send()
+                            +receive()
+                            +store()
+                        }
+
+                        class Article {
+                            +String _id
+                            +String title
+                            +String content
+                            +String category
+                            +String[] tags
+                            +String excerpt
+                            +Number readTime
+                            +Date publishedAt
+                            +create()
+                            +update()
+                            +search()
+                            +getByCategory()
+                        }
+
+                        class FAQ {
+                            +String _id
+                            +String question
+                            +String answer
+                            +String category
+                            +String[] tags
+                            +Number priority
+                            +create()
+                            +update()
+                            +search()
+                            +getByCategory()
+                        }
+
+                        class Analytics {
+                            +String _id
+                            +Number totalVisitors
+                            +Number totalEnquiries
+                            +Number totalChats
+                            +Object dailyStats
+                            +Object agentPerformance
+                            +generateReport()
+                            +getMetrics()
+                            +updateStats()
+                        }
+
+                        User <|-- Admin
+                        User <|-- Executive
+                        User <|-- Visitor
+                        
+                        Visitor ||--o{ Enquiry : creates
+                        Visitor ||--o{ ChatMessage : sends
+                        Executive ||--o{ Enquiry : handles
+                        Executive ||--o{ ChatMessage : responds
+                        
+                        Admin ||--o{ Article : manages
+                        Admin ||--o{ FAQ : manages
+                        Admin ||--o{ Analytics : views
+                        
+                        Visitor ||--o{ Article : reads
+                        Visitor ||--o{ FAQ : searches
+                </div>
+            </div>
+        </div>
+
+        <!-- Use Case Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">🎯 Use Case Diagram - System Functionality & User Interactions</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="useCaseDiagram">
+                    graph TB
+                        subgraph Actors
+                            A[👤 Admin User]
+                            E[👔 Executive User]
+                            V[👥 Public Visitor]
+                        end
+
+                        subgraph Authentication
+                            UC1[🔐 Login]
+                            UC2[🚪 Logout]
+                            UC3[🔑 Session Management]
+                        end
+
+                        subgraph Dashboard
+                            UC4[📊 View Dashboard]
+                            UC5[⚙️ Manage Settings]
+                            UC6[👥 User Management]
+                        end
+
+                        subgraph Chatbot
+                            UC7[🤖 Access Chatbot]
+                            UC8[📝 Register as Visitor]
+                            UC9[💬 Chat with AI]
+                            UC10[❓ Search FAQ]
+                        end
+
+                        subgraph Content
+                            UC11[📰 Manage Articles]
+                            UC12[❓ Manage FAQs]
+                            UC13[📖 Read Articles]
+                            UC14[🔍 Search Content]
+                        end
+
+                        subgraph Analytics
+                            UC15[📈 View Analytics]
+                            UC16[📊 Generate Reports]
+                            UC17[📋 Handle Enquiries]
+                        end
+
+                        subgraph Communication
+                            UC18[💬 Manage Chats]
+                            UC19[📧 Send Messages]
+                            UC20[📞 Track Visitors]
+                        end
+
+                        A --> UC1
+                        A --> UC2
+                        A --> UC3
+                        A --> UC4
+                        A --> UC5
+                        A --> UC6
+                        A --> UC11
+                        A --> UC12
+                        A --> UC15
+                        A --> UC16
+
+                        E --> UC1
+                        E --> UC2
+                        E --> UC3
+                        E --> UC4
+                        E --> UC5
+                        E --> UC17
+                        E --> UC18
+                        E --> UC19
+                        E --> UC20
+
+                        V --> UC7
+                        V --> UC8
+                        V --> UC9
+                        V --> UC10
+                        V --> UC13
+                        V --> UC14
+                </div>
+            </div>
+        </div>
+
+        <!-- Sequence Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">⏱️ Sequence Diagram - User Authentication & Dashboard Access Flow</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="sequenceDiagram">
+                    sequenceDiagram
+                        participant U as User
+                        participant F as Frontend
+                        participant A as Auth API
+                        participant D as Database
+                        participant S as System
+
+                        U->>F: Visit Login Page
+                        F->>F: Load Login Form
+                        U->>F: Enter Credentials
+                        F->>A: POST /api/auth/login
+                        A->>D: Query User Data
+                        D-->>A: Return User Info
+                        A->>A: Validate Password
+                        A->>A: Generate JWT Token
+                        A-->>F: Return Token + User Data
+                        F->>F: Store Token in localStorage
+                        F->>F: Check User Role
+                        
+                        alt Admin User
+                            F->>F: Redirect to Admin Dashboard
+                            F->>S: Load Admin Components
+                            F->>A: GET /api/analytics
+                            A->>D: Fetch Analytics Data
+                            D-->>A: Return Analytics
+                            A-->>F: Return Dashboard Data
+                            F->>F: Render Admin Dashboard
+                        else Executive User
+                            F->>F: Redirect to Executive Dashboard
+                            F->>S: Load Executive Components
+                            F->>A: GET /api/executive/metrics
+                            A->>D: Fetch Personal Metrics
+                            D-->>A: Return Metrics
+                            A-->>F: Return Dashboard Data
+                            F->>F: Render Executive Dashboard
+                        else Public Visitor
+                            F->>F: Redirect to Landing Page
+                            F->>S: Load Public Components
+                            F->>F: Show Chatbot Widget
+                        end
+
+                        F-->>U: Display Appropriate Dashboard
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">🔄 Activity Diagram - Chatbot System & Enquiry Processing Flow</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="activityDiagram">
+                    graph TD
+                        Start([Visitor Arrives]) --> A{Has Account?}
+                        A -->|No| B[Show Registration Form]
+                        A -->|Yes| C[Login Process]
+                        
+                        B --> D[Collect Visitor Info]
+                        D --> E[Validate Data]
+                        E -->|Invalid| F[Show Error Message]
+                        F --> B
+                        E -->|Valid| G[Create Visitor Record]
+                        
+                        C --> H[Authenticate User]
+                        H -->|Success| I[Load User Profile]
+                        H -->|Failed| J[Show Login Error]
+                        J --> C
+                        
+                        G --> K[Initialize Chat Session]
+                        I --> K
+                        
+                        K --> L[Display Chatbot Interface]
+                        L --> M[Show Welcome Message]
+                        M --> N[Present Service Options]
+                        
+                        N --> O{User Action}
+                        O -->|Ask Question| P[Process Query]
+                        O -->|Search FAQ| Q[FAQ Search Interface]
+                        O -->|Read Articles| R[Article Browser]
+                        O -->|Create Enquiry| S[Enquiry Form]
+                        
+                        P --> T[AI Response Generation]
+                        T --> U[Display Response]
+                        U --> V{Need Human Help?}
+                        V -->|Yes| S
+                        V -->|No| W[Continue Chat]
+                        W --> O
+                        
+                        Q --> X[Search FAQ Database]
+                        X --> Y[Display Results]
+                        Y --> Z[User Selects FAQ]
+                        Z --> AA[Show Detailed Answer]
+                        AA --> O
+                        
+                        R --> BB[Browse Articles]
+                        BB --> CC[Filter by Category]
+                        CC --> DD[Display Articles]
+                        DD --> EE[User Reads Article]
+                        EE --> O
+                        
+                        S --> FF[Collect Enquiry Details]
+                        FF --> GG[Validate Enquiry Data]
+                        GG -->|Invalid| HH[Show Validation Error]
+                        HH --> FF
+                        GG -->|Valid| II[Create Enquiry Record]
+                        
+                        II --> JJ[Assign to Executive]
+                        JJ --> KK[Send Notification]
+                        KK --> LL[Update Dashboard]
+                        LL --> MM[Enquiry Processing]
+                        
+                        MM --> NN{Executive Action}
+                        NN -->|Respond| OO[Send Response]
+                        NN -->|Close| PP[Mark as Resolved]
+                        NN -->|Escalate| QQ[Assign to Admin]
+                        
+                        OO --> RR[Update Chat History]
+                        PP --> SS[Archive Enquiry]
+                        QQ --> TT[Admin Review]
+                        
+                        RR --> O
+                        SS --> End([Process Complete])
+                        TT --> UU[Admin Decision]
+                        UU --> End
+                </div>
+            </div>
+        </div>
+
+        <!-- Component Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">🧩 Component Diagram - System Architecture & Component Relationships</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="componentDiagram">
+                    graph TB
+                        subgraph "Frontend Layer"
+                            UI[User Interface]
+                            DASH[Dashboard Components]
+                            CHAT[Chatbot Widget]
+                            AUTH[Authentication UI]
+                            ANALYTICS[Analytics Charts]
+                        end
+
+                        subgraph "Backend API"
+                            AUTH_API[Authentication API]
+                            USER_API[User Management API]
+                            CHAT_API[Chat API]
+                            ENQUIRY_API[Enquiry API]
+                            ANALYTICS_API[Analytics API]
+                            CONTENT_API[Content API]
+                        end
+
+                        subgraph "Middleware"
+                            JWT_MW[JWT Middleware]
+                            CORS_MW[CORS Middleware]
+                            AUTH_MW[Auth Middleware]
+                            LOG_MW[Logging Middleware]
+                        end
+
+                        subgraph "Database Layer"
+                            USER_DB[(User Collection)]
+                            ENQUIRY_DB[(Enquiry Collection)]
+                            CHAT_DB[(Chat Collection)]
+                            CONTENT_DB[(Content Collection)]
+                            ANALYTICS_DB[(Analytics Collection)]
+                        end
+
+                        subgraph "External Services"
+                            JWT_SERVICE[JWT Service]
+                            EMAIL_SERVICE[Email Service]
+                            AI_SERVICE[AI Chat Service]
+                        end
+
+                        UI --> AUTH_API
+                        DASH --> USER_API
+                        DASH --> ANALYTICS_API
+                        CHAT --> CHAT_API
+                        AUTH --> AUTH_API
+                        ANALYTICS --> ANALYTICS_API
+
+                        AUTH_API --> JWT_MW
+                        USER_API --> AUTH_MW
+                        CHAT_API --> AUTH_MW
+                        ENQUIRY_API --> AUTH_MW
+                        ANALYTICS_API --> AUTH_MW
+                        CONTENT_API --> AUTH_MW
+
+                        JWT_MW --> JWT_SERVICE
+                        AUTH_MW --> JWT_SERVICE
+
+                        AUTH_API --> USER_DB
+                        USER_API --> USER_DB
+                        CHAT_API --> CHAT_DB
+                        ENQUIRY_API --> ENQUIRY_DB
+                        ANALYTICS_API --> ANALYTICS_DB
+                        CONTENT_API --> CONTENT_DB
+
+                        CHAT_API --> AI_SERVICE
+                        ENQUIRY_API --> EMAIL_SERVICE
+                </div>
+            </div>
+        </div>
+
+        <!-- State Diagram -->
+        <div class="diagram-section">
+            <div class="diagram-header">🔄 State Diagram - Enquiry Lifecycle Management</div>
+            <div class="diagram-content">
+                <div class="mermaid" id="stateDiagram">
+                    stateDiagram-v2
+                        [*] --> Created
+                        Created --> UnderReview : Assign to Executive
+                        UnderReview --> InProgress : Executive Starts Work
+                        UnderReview --> Escalated : Requires Admin Attention
+                        InProgress --> WaitingForResponse : Send Response
+                        WaitingForResponse --> InProgress : Receive Follow-up
+                        WaitingForResponse --> Resolved : Visitor Satisfied
+                        InProgress --> Resolved : Complete Resolution
+                        Escalated --> UnderReview : Admin Reassigns
+                        Resolved --> Archived : Close Enquiry
+                        Archived --> [*]
+                </div>
+            </div>
+        </div>
+
+        <div class="export-buttons">
+            <button class="export-btn" onclick="window.print()">🖨️ Print/Export to PDF</button>
+            <button class="export-btn secondary" onclick="reloadDiagrams()">🔄 Reload Diagrams</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid with optimal settings for UML diagrams
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: 50,
+                rankSpacing: 50
+            },
+            sequence: {
+                useMaxWidth: true,
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false
+            },
+            class: {
+                useMaxWidth: true,
+                nodeSpacing: 50,
+                rankSpacing: 50
+            },
+            state: {
+                useMaxWidth: true,
+                nodeSpacing: 50,
+                rankSpacing: 50
+            }
+        });
+
+        // Function to render all diagrams
+        function renderDiagrams() {
+            console.log('Rendering UML diagrams...');
+            
+            const diagrams = [
+                'classDiagram',
+                'useCaseDiagram', 
+                'sequenceDiagram',
+                'activityDiagram',
+                'componentDiagram',
+                'stateDiagram'
+            ];
+
+            diagrams.forEach((id, index) => {
+                setTimeout(() => {
+                    try {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            console.log(`Rendering ${id}...`);
+                            mermaid.render(`mermaid-${id}`, element.textContent).then(({svg}) => {
+                                element.innerHTML = svg;
+                            }).catch(err => {
+                                console.error(`Error rendering ${id}:`, err);
+                                element.innerHTML = `<p style="color: red;">Error rendering diagram: ${err.message}</p>`;
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Error with ${id}:`, err);
+                    }
+                }, index * 500);
+            });
+        }
+
+        // Function to reload diagrams
+        function reloadDiagrams() {
+            console.log('Reloading diagrams...');
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            mermaidElements.forEach(element => {
+                element.innerHTML = element.getAttribute('data-original') || element.textContent;
+            });
+            setTimeout(renderDiagrams, 100);
+        }
+
+        // Store original content and start rendering
+        document.addEventListener('DOMContentLoaded', function() {
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            mermaidElements.forEach(element => {
+                element.setAttribute('data-original', element.textContent);
+            });
+            setTimeout(renderDiagrams, 500);
+        });
+
+        // Handle print/export
+        window.addEventListener('beforeprint', function() {
+            setTimeout(renderDiagrams, 100);
+        });
+    </script>
+</body>
+</html>
