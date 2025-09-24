@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
 import Visitor from '@/lib/models/Visitor';
 
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 // POST /api/visitors - Create visitor
 export async function POST(request: NextRequest) {
   try {
@@ -150,7 +162,13 @@ export async function GET(request: NextRequest) {
     };
     
     const result = await Promise.race([operationPromise(), timeoutPromise]);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
 
   } catch (error: any) {
     console.error('❌ Visitors list error:', error);
@@ -162,6 +180,12 @@ export async function GET(request: NextRequest) {
       pageSize: 10, 
       items: [],
       error: 'Database connection timeout. Please try again.' 
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
     });
   }
 }
