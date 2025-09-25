@@ -9,12 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  serverExternalPackages: ['bcryptjs', 'mongoose', 'mongodb'],
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push('bcryptjs');
-    }
-    return config;
+  experimental: {
+    serverComponentsExternalPackages: ['bcryptjs', 'mongoose', 'mongodb']
   }
 };
 
