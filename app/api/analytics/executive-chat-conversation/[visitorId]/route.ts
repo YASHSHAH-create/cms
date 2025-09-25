@@ -7,7 +7,7 @@ import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middl
 async function getExecutiveChatConversation(
   request: NextRequest,
   user: any,
-  context: { params: { visitorId: string } }
+  context: { params: Promise<{ visitorId: string }> }
 ) {
   try {
     console.log('🔄 GET /api/analytics/executive-chat-conversation/[visitorId] - Fetching chat conversation');

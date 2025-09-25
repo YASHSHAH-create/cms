@@ -1,11 +1,12 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_FLAGS = "--force"
+  NODE_OPTIONS = "--max-old-space-size=4096"
 
 # Next.js plugin for proper deployment
 [[plugins]]

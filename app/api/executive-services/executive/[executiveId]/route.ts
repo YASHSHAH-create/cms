@@ -7,7 +7,7 @@ import ExecutiveService from '@/lib/models/ExecutiveService';
 async function getExecutiveServices(
   request: NextRequest,
   user: any,
-  context: { params: { executiveId: string } }
+  context: { params: Promise<{ executiveId: string }> }
 ) {
   try {
     await connectMongo();

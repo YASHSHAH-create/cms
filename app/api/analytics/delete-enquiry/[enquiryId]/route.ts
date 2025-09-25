@@ -4,14 +4,14 @@ import VisitorNew from '@/lib/models/VisitorNew';
 import Visitor from '@/lib/models/Visitor';
 import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
 
-async function deleteEnquiry(request: NextRequest, user: any, context: { params: { enquiryId: string } }) {
+async function deleteEnquiry(request: NextRequest, user: any, context: { params: Promise<{ enquiryId: string }> }) {
   try {
     console.log('🔄 DELETE /api/analytics/delete-enquiry/[enquiryId] - Deleting enquiry');
     
     await connectMongo();
     console.log('✅ Connected to MongoDB');
 
-    const { enquiryId } = context.params;
+    const { enquiryId } = await context.params;
     console.log('📝 Enquiry ID:', enquiryId);
 
     // Validate required fields
@@ -62,7 +62,7 @@ async function deleteEnquiry(request: NextRequest, user: any, context: { params:
 }
 
 // Temporarily disable authentication for testing
-export const DELETE = async (request: NextRequest, context: { params: { enquiryId: string } }) => {
+export const DELETE = async (request: NextRequest, context: { params: Promise<{ enquiryId: string }> }) => {
   try {
     return await deleteEnquiry(request, { userId: 'temp', username: 'admin', name: 'Admin', role: 'admin' }, context);
   } catch (error) {
