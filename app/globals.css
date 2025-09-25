@@ -1,15 +1,8 @@
-@import "tailwindcss";
+/* Global CSS styles */
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-poppins);
-  --font-mono: var(--font-poppins);
 }
 
 @media (prefers-color-scheme: dark) {
