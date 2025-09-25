@@ -9,12 +9,12 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-interface ConversionRateChartProps {
+interface ConversationRatioChartProps {
   visitors: number;
   leadsConverted: number;
 }
 
-export default function ConversionRateChart({ visitors, leadsConverted }: ConversionRateChartProps) {
+export default function ConversationRatioChart({ visitors, leadsConverted }: ConversationRatioChartProps) {
   const conversionRate = visitors > 0 ? Math.round((leadsConverted / visitors) * 100) : 0;
   const remaining = 100 - conversionRate;
 
