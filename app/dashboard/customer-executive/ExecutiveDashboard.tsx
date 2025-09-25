@@ -140,6 +140,12 @@ export default function ExecutiveDashboard() {
   };
 
   useEffect(() => {
+    // Skip auth checks during build process
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+    
     // Get user info from localStorage
     const userStr = localStorage.getItem('ems_user');
     const token = localStorage.getItem('ems_token');
@@ -160,8 +166,7 @@ export default function ExecutiveDashboard() {
         setUser(userData);
         
         // Check if user has executive role (including new role types)
-        if (!['executive', 'sales-executive', 'customer-executive'].includes(userData.role)) {
-          console.warn(`❌ CustomerExecutiveDashboard: User not authorized to view this dashboard`, { userRole: userData.role });
+        if (userData.role && !['executive', 'sales-executive', 'customer-executive'].includes(userData.role)) {
           if (userData.role === 'admin') {
             router.push('/dashboard/admin/overview');
           } else {

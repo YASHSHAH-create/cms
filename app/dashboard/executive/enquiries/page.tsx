@@ -622,8 +622,8 @@ export default function ExecutiveEnquiriesPage() {
                         </span>
                       </td>
                        <td className="px-6 py-4 whitespace-nowrap">
-                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(enquiry.status || 'new')}`}>
-                           {(enquiry.status || 'new').replace('_', ' ').toUpperCase()}
+                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                           {enquiry.service || 'General Inquiry'}
                          </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

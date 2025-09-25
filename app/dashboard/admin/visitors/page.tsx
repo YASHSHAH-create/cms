@@ -320,7 +320,9 @@ export default function AdminVisitorsPage() {
 
       if (response.ok) {
         const responseData = await response.json();
-        setVisitors(responseData.items || responseData.visitors || []);
+        const visitorsData = responseData.items || responseData.visitors || [];
+        
+        setVisitors(visitorsData);
         setPagination({
           page: pagination.page,
           limit: pagination.limit,
@@ -1546,45 +1548,7 @@ export default function AdminVisitorsPage() {
                        {/* Sales Executive */}
                        {visibleColumns['Sales Executive'] && (
                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           <div className="relative">
-                             <select
-                               className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               value={visitor.salesExecutive || ''}
-                               onChange={(e) => {
-                                 const selectedSalesExecutiveId = e.target.value;
-                                 if (selectedSalesExecutiveId) {
-                                   const selectedSalesExecutive = salesExecutives.find(se => (se._id || se.id) === selectedSalesExecutiveId);
-                                   if (selectedSalesExecutive) {
-                                     const salesExecutiveId = selectedSalesExecutive._id || selectedSalesExecutive.id;
-                                     const salesExecutiveName = selectedSalesExecutive.name || selectedSalesExecutive.username;
-                                     
-                                     if (!salesExecutiveId || !salesExecutiveName) {
-                                       setError('Invalid sales executive data selected');
-                                       return;
-                                     }
-                                     
-                                     assignSalesExecutiveToVisitor(visitor._id, salesExecutiveId, salesExecutiveName);
-                                   } else {
-                                     setError('Selected sales executive not found');
-                                   }
-                                 } else if (e.target.value === '') {
-                                   // Handle unassigning
-                                   assignSalesExecutiveToVisitor(visitor._id, '', '');
-                                 }
-                               }}
-                             >
-                               <option value="">Unassigned</option>
-                               {salesExecutives.length > 0 ? (
-                                 salesExecutives.map(salesExecutive => (
-                                   <option key={salesExecutive._id || salesExecutive.id} value={salesExecutive._id || salesExecutive.id}>
-                                     {salesExecutive.name || salesExecutive.username || 'Unknown Sales Executive'}
-                                   </option>
-                                 ))
-                               ) : (
-                                 <option value="" disabled>Loading sales executives...</option>
-                               )}
-                             </select>
-                           </div>
+                           {visitor.salesExecutiveName || visitor.agentName || 'Unassigned'}
                          </td>
                        )}
                        
@@ -1679,7 +1643,7 @@ export default function AdminVisitorsPage() {
                        {visibleColumns['Comments'] && (
                          <td className="px-3 py-4 text-sm text-gray-900 max-w-xs">
                            <div className="truncate" title={visitor.comments || 'No comments'}>
-                             {visitor.comments || '-'}
+                             {visitor.comments || 'No comments'}
                            </div>
                          </td>
                        )}

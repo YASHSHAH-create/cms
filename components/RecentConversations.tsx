@@ -77,7 +77,7 @@ export default function RecentConversations({ conversations }: RecentConversatio
         <div className="space-y-3">
           {conversations.map((conversation, index) => (
             <div
-              key={conversation.visitor._id}
+              key={`conversation-${conversation.visitor._id}-${index}`}
               className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center justify-between">
@@ -119,9 +119,9 @@ export default function RecentConversations({ conversations }: RecentConversatio
                   
                   {expandedConversation === conversation.visitor._id && (
                     <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                      {conversation.messages.slice(-3).map((message) => (
+                      {conversation.messages.slice(-3).map((message, messageIndex) => (
                         <div
-                          key={message._id}
+                          key={`message-${message._id}-${messageIndex}`}
                           className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                           <div

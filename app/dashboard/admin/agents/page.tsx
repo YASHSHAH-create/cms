@@ -266,7 +266,7 @@ export default function AdminAgentsPage() {
     setFormLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
+      const response = await fetch(`${API_BASE}/api/auth/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -274,7 +274,6 @@ export default function AdminAgentsPage() {
         },
         body: JSON.stringify({
           name: formData.name,
-          username: formData.email.split('@')[0],
           email: formData.email,
           phone: formData.phone,
           password: 'temp123',
@@ -284,7 +283,8 @@ export default function AdminAgentsPage() {
       });
 
       if (response.ok) {
-        const newAgent = await response.json();
+        const data = await response.json();
+        const newAgent = data.user;
         setUsers(prev => [...prev, {
           id: newAgent._id,
           _id: newAgent._id,
@@ -302,6 +302,8 @@ export default function AdminAgentsPage() {
           role: 'executive',
           department: 'Customer Service'
         });
+        // Refresh the approved users list
+        loadApprovedUsers();
         alert('Agent added successfully');
       } else {
         const errorData = await response.json();
@@ -325,7 +327,8 @@ export default function AdminAgentsPage() {
   // User Management functions
   const loadPendingUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/pending-registrations`, {
+      console.log('🔄 Loading all users for filtering...');
+      const response = await fetch(`${API_BASE}/api/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -334,7 +337,20 @@ export default function AdminAgentsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setPendingUsers(data.pendingUsers || []);
+        console.log('👥 All users API response:', data);
+        const allUsers = data.users || [];
+        
+        // Filter pending users (explicitly not approved)
+        const pending = allUsers.filter(user => 
+          ['sales-executive', 'customer-executive', 'executive'].includes(user.role) && 
+          user.isApproved === false
+        );
+        console.log('📋 Filtered pending users:', pending);
+        setPendingUsers(pending);
+      } else {
+        console.error('❌ Failed to load users:', response.status, response.statusText);
+        const errorText = await response.text().catch(() => 'Could not read error');
+        console.error('❌ Error response:', errorText);
       }
     } catch (err) {
       console.error('Error loading pending users:', err);
@@ -343,7 +359,8 @@ export default function AdminAgentsPage() {
 
   const loadApprovedUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/executives`, {
+      console.log('🔄 Loading all users for approved filtering...');
+      const response = await fetch(`${API_BASE}/api/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -352,7 +369,19 @@ export default function AdminAgentsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setApprovedUsers(data.executives || []);
+        console.log('👥 All users API response for approved:', data);
+        const allUsers = data.users || [];
+        
+        // Filter approved executives - show all executives (like the original behavior)
+        const approved = allUsers.filter(user => 
+          ['sales-executive', 'customer-executive', 'executive'].includes(user.role)
+        );
+        console.log('✅ Filtered approved users:', approved);
+        setApprovedUsers(approved);
+      } else {
+        console.error('❌ Failed to load approved users:', response.status, response.statusText);
+        const errorText = await response.text().catch(() => 'Could not read error');
+        console.error('❌ Error response:', errorText);
       }
     } catch (err) {
       console.error('Error loading approved users:', err);
@@ -686,7 +715,7 @@ export default function AdminAgentsPage() {
                                 console.log(`🔍 User: ${user.name} (ID: ${user.id}), Performance:`, performance);
                                 return (
                                 <tr 
-                                  key={user.id} 
+                                  key={`agent-${user.id}-${index}`} 
                               className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                                 index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                               }`}
@@ -751,8 +780,8 @@ export default function AdminAgentsPage() {
                                           <div className="p-3">
                                             <div className="text-sm font-medium text-black mb-2">Select Services</div>
                                             <div className="max-h-48 overflow-y-auto space-y-2">
-                                              {availableServices.map(service => (
-                                          <label key={service} className="flex items-center space-x-2 cursor-pointer">
+                                              {availableServices.map((service, serviceIndex) => (
+                                          <label key={`service-${service}-${serviceIndex}`} className="flex items-center space-x-2 cursor-pointer">
                                             <input
                                               type="checkbox"
                                               checked={editingServices.includes(service)}
@@ -823,7 +852,7 @@ export default function AdminAgentsPage() {
                       {executiveUsers && executiveUsers.length > 0 && (
                     <div className="mt-3 text-xs text-gray-600">
                           {executiveUsers.slice(0, 3).map((user: User, index: number) => (
-                            <div key={user.id} className="flex items-center space-x-2">
+                            <div key={`chart-user-${user.id}-${index}`} className="flex items-center space-x-2">
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                               <span>
                                 {user.name || user.username}
