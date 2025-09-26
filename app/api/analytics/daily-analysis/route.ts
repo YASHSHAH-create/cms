@@ -17,7 +17,7 @@ async function getDailyAnalysisData(request: NextRequest, user: any) {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 7);
 
-    // Get daily analysis data
+    // Get daily analysis data with actual visitor details
     const dailyAnalysis = [];
 
     for (let i = 6; i >= 0; i--) {
@@ -28,19 +28,23 @@ async function getDailyAnalysisData(request: NextRequest, user: any) {
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
 
-      const [visitors, enquiries, messages] = await Promise.all([
-        Visitor.countDocuments({
+      // Get actual visitor data for the day
+      const [visitorsData, enquiriesData, messagesCount] = await Promise.all([
+        Visitor.find({
           ...baseFilter,
           createdAt: { $gte: dayStart, $lte: dayEnd }
-        }),
-        Enquiry.countDocuments({
+        }).select('name email phone enquiryDetails location createdAt').lean(),
+        Enquiry.find({
           ...baseFilter,
           createdAt: { $gte: dayStart, $lte: dayEnd }
-        }),
+        }).select('subject message visitorName createdAt').lean(),
         ChatMessage.countDocuments({
           at: { $gte: dayStart, $lte: dayEnd }
         })
       ]);
+
+      const visitorsCount = visitorsData.length;
+      const enquiriesCount = enquiriesData.length;
 
       dailyAnalysis.push({
         date: date.toLocaleDateString('en-US', { 
@@ -48,10 +52,13 @@ async function getDailyAnalysisData(request: NextRequest, user: any) {
           month: 'short', 
           day: 'numeric' 
         }),
-        visitors,
-        enquiries,
-        messages,
-        conversionRate: visitors > 0 ? Math.round((enquiries / visitors) * 100 * 10) / 10 : 0
+        visitors: visitorsCount,
+        enquiries: enquiriesCount,
+        messages: messagesCount,
+        conversionRate: visitorsCount > 0 ? Math.round((enquiriesCount / visitorsCount) * 100 * 10) / 10 : 0,
+        // Add detailed data
+        visitorsData: visitorsData,
+        enquiriesData: enquiriesData
       });
     }
 

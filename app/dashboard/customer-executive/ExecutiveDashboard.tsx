@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -9,60 +8,23 @@ import DailyVisitorsChart from '@/components/DailyVisitorsChart';
 import ConversionRateChart from '@/components/ConversationRatioChart';
 import DailyAnalysisTable from '@/components/DailyAnalysisTable';
 import RecentConversations from '@/components/RecentConversations';
-// Chart components imported but not used in this component
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
+import { useAuth } from '@/lib/hooks/useAuth';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
-
-type DailyVisitorsData = {
-  labels: string[];
-  datasets: {
-    label: string;
-    data: number[];
-    borderColor: string;
-    backgroundColor: string;
-  }[];
-};
-
-type ConversationRatioData = {
-  visitors: number;
-  leadsConverted: number;
-  conversionRate: number;
-};
-
-type DailyAnalysisData = {
-  id: string;
-  visitor: string;
-  agent: string;
-  enquiry: string;
-  dateTime: string;
-  status: 'active' | 'completed' | 'pending';
-};
-
-type RecentConversationData = {
-  id: string;
-  visitor: string;
-  lastMessage: string;
-  timestamp: string;
-  messages: {
-    sender: 'visitor' | 'agent';
-    message: string;
-    timestamp: string;
-  }[];
-};
+// Type definitions matching admin dashboard
+type DashboardTotals = { visitors: number; messages: number; faqs: number; articles: number; };
+type DashboardToday = { visitors: number; messages: number; };
+type DailyVisitorsData = { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[]; };
+type ConversationRatioData = { visitors: number; leadsConverted: number; conversionRate: number; };
+type VisitorData = { _id: string; name: string; email?: string; phone?: string; enquiryDetails?: string; location?: string; createdAt: string; };
+type EnquiryData = { _id: string; subject?: string; message?: string; visitorName?: string; createdAt: string; };
+type DailyAnalysisData = { date: string; visitors: number; enquiries: number; messages: number; conversionRate: number; visitorsData?: VisitorData[]; enquiriesData?: EnquiryData[]; };
+type RecentConversationData = { id: string; visitor: string; lastMessage: string; timestamp: string; messages: { sender: 'visitor' | 'agent'; message: string; timestamp: string; }[]; };
 
 export default function ExecutiveDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
+  const { token, user, isAuthenticated, refresh } = useAuth();
+  const [totals, setTotals] = useState<DashboardTotals | null>(null);
+  const [today, setToday] = useState<DashboardToday | null>(null);
   const [dailyVisitorsData, setDailyVisitorsData] = useState<DailyVisitorsData | null>(null);
   const [conversationRatioData, setConversationRatioData] = useState<ConversationRatioData | null>(null);
   const [dailyAnalysisData, setDailyAnalysisData] = useState<DailyAnalysisData[]>([]);
@@ -70,262 +32,206 @@ export default function ExecutiveDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
-
-  // Fallback data when API is not available
-  const fallbackData = {
-    dailyVisitors: {
-      labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      datasets: [{
-        label: 'Visitors',
-        data: [12, 19, 8, 15, 22, 18, 25],
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      }]
-    },
-    conversationRatio: {
-      visitors: 150,
-      leadsConverted: 45,
-      conversionRate: 30
-    },
-    dailyAnalysis: [
-      {
-        id: '1',
-        visitor: 'John Doe',
-        agent: 'Chatbot',
-        enquiry: 'Water Testing Services',
-        dateTime: new Date().toISOString(),
-        status: 'active' as const
-      },
-      {
-        id: '2',
-        visitor: 'Jane Smith',
-        agent: 'Executive Agent',
-        enquiry: 'Environmental Analysis',
-        dateTime: new Date(Date.now() - 86400000).toISOString(),
-        status: 'completed' as const
-      },
-      {
-        id: '3',
-        visitor: 'Mike Johnson',
-        agent: 'Chatbot',
-        enquiry: 'Soil Testing',
-        dateTime: new Date(Date.now() - 172800000).toISOString(),
-        status: 'pending' as const
-      }
-    ],
-    recentConversations: [
-      {
-        id: '1',
-        visitor: 'John Doe',
-        lastMessage: 'I need water testing services for my property',
-        timestamp: new Date().toISOString(),
-        messages: [
-          { sender: 'visitor' as const, message: 'Hello, I need water testing services', timestamp: new Date().toISOString() },
-          { sender: 'agent' as const, message: 'Great! I can help you with water testing. What type of water do you need tested?', timestamp: new Date().toISOString() }
-        ]
-      },
-      {
-        id: '2',
-        visitor: 'Jane Smith',
-        lastMessage: 'What are your environmental testing capabilities?',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        messages: [
-          { sender: 'visitor' as const, message: 'What are your environmental testing capabilities?', timestamp: new Date(Date.now() - 3600000).toISOString() },
-          { sender: 'agent' as const, message: 'We offer comprehensive environmental testing including air, water, and soil analysis.', timestamp: new Date(Date.now() - 3500000).toISOString() }
-        ]
-      }
-    ]
-  };
-
   useEffect(() => {
-    // Skip auth checks during build process
-    if (typeof window === 'undefined') {
-      setLoading(false);
-      return;
-    }
-    
-    // Get user info from localStorage
-    const userStr = localStorage.getItem('ems_user');
-    const token = localStorage.getItem('ems_token');
-    
-    console.log('🔍 CustomerExecutiveDashboard: Loading user data...', { 
-      userStr: userStr ? 'Found' : 'Not found',
-      token: token ? 'Found' : 'Not found'
-    });
-    
-    if (userStr && token) {
-      try {
-        const userData = JSON.parse(userStr);
-        console.log('👤 CustomerExecutiveDashboard: User data loaded:', { 
-          name: userData.name, 
-          role: userData.role,
-          id: userData.id || userData._id
-        });
-        setUser(userData);
-        
-        // Check if user has executive role (including new role types)
-        if (userData.role && !['executive', 'sales-executive', 'customer-executive'].includes(userData.role)) {
-          if (userData.role === 'admin') {
-            router.push('/dashboard/admin/overview');
-          } else {
-            router.push('/login');
-          }
-          return;
-        }
-        
-        console.log('✅ CustomerExecutiveDashboard: User role validated, proceeding to load data...');
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        router.push('/login');
-        return;
-      }
-    } else {
-      console.log('❌ CustomerExecutiveDashboard: No user data or token found, redirecting to login');
-      router.push('/login');
-      return;
-    }
-
     const loadData = async () => {
-      if (!token) {
-        // Use fallback data when no token is available
-        setDailyVisitorsData(fallbackData.dailyVisitors);
-        setConversationRatioData(fallbackData.conversationRatio);
-        setDailyAnalysisData(fallbackData.dailyAnalysis);
-        setRecentConversationsData(fallbackData.recentConversations);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
+      const headers = token ? {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : { 'Content-Type': 'application/json' };
 
-        // Fetch all data in parallel
+      try {
         const [
-          dailyVisitorsRes,
-          conversationRatioRes,
-          dailyAnalysisRes,
-          recentConversationsRes
-        ] = await Promise.all([
-          fetch(`${API_BASE}/api/analytics/daily-visitors?days=7`, { headers }),
-          fetch(`${API_BASE}/api/analytics/conversion-rate`, { headers }),
-          fetch(`${API_BASE}/api/analytics/daily-analysis?limit=10`, { headers }),
-          fetch(`${API_BASE}/api/analytics/recent-conversations?limit=5`, { headers })
+          visitorsResponse,
+          dailyAnalysisResponse,
+          recentConversationsResponse
+        ] = await Promise.allSettled([
+          fetch('/api/visitors?limit=100', { headers }),
+          fetch('/api/analytics/daily-analysis?limit=7', { headers }),
+          fetch('/api/analytics/recent-conversations?limit=5', { headers })
         ]);
 
-        // Check for authentication errors
-        if (dailyVisitorsRes.status === 401) {
-          setError('Authentication failed. Please login again.');
-          localStorage.removeItem('ems_token');
-          localStorage.removeItem('ems_user');
-          window.location.href = '/login';
-          return;
-        }
+        let totalVisitors = 0;
+        let visitors: any[] = [];
+        let leadsConverted = 0;
 
-        // Handle daily visitors data
-        if (dailyVisitorsRes.ok) {
-          const dailyVisitors = await dailyVisitorsRes.json();
-          setDailyVisitorsData(dailyVisitors);
+        // Handle Visitors Data (same logic as admin dashboard)
+        if (visitorsResponse.status === 'fulfilled' && visitorsResponse.value.ok) {
+          const visitorsData = await visitorsResponse.value.json();
+          totalVisitors = visitorsData.total || visitorsData.count || 0;
+          visitors = visitorsData.items || visitorsData.users || [];
+
+          // Filter visitors for customer service specific enquiries
+          if (user?.role === 'customer-executive') {
+            visitors = visitors.filter((v: any) => 
+              !v.service || 
+              v.service.toLowerCase().includes('customer') ||
+              v.service.toLowerCase().includes('support') ||
+              v.service.toLowerCase().includes('general')
+            );
+            totalVisitors = visitors.length;
+          }
+
+          // Calculate leads converted
+          leadsConverted = visitors.filter((v: any) =>
+            v.status && (
+              v.status.includes('converted') ||
+              v.status.includes('completed') ||
+              v.status.includes('contacted') ||
+              (v.enquiryDetails && v.enquiryDetails.length > 10)
+            )
+          ).length;
+
+          if (leadsConverted === 0) {
+            leadsConverted = visitors.filter((v: any) =>
+              v.enquiryDetails && v.enquiryDetails.length > 20
+            ).length;
+          }
+
+          if (leadsConverted === 0 && totalVisitors > 0) {
+            leadsConverted = Math.max(1, Math.floor(totalVisitors * 0.18)); // Slightly higher conversion for customer service
+          }
+
+          console.log('✅ Customer Executive visitors data loaded:', totalVisitors, 'total visitors');
         } else {
-          // Use fallback data if API fails
-          setDailyVisitorsData(fallbackData.dailyVisitors);
+          console.warn('⚠️ Failed to load visitors data, using fallback');
+          totalVisitors = 20; // Fallback for customer executives
+          leadsConverted = 4;
         }
 
-        // Handle conversation ratio data
-        if (conversationRatioRes.ok) {
-          const conversationRatio = await conversationRatioRes.json();
-          setConversationRatioData(conversationRatio);
-        } else {
-          // Use fallback data if API fails
-          setConversationRatioData(fallbackData.conversationRatio);
-        }
+        // Calculate today's metrics
+        const todayDate = new Date().toISOString().split('T')[0];
+        const todayVisitors = visitors.filter((v: any) =>
+          v.createdAt && v.createdAt.startsWith(todayDate)
+        ).length;
+        const todayMessages = Math.floor(todayVisitors * 0.7); // Higher message rate for customer service
 
-        // Handle daily analysis data
-        if (dailyAnalysisRes.ok) {
-          const dailyAnalysis = await dailyAnalysisRes.json();
+        setTotals({
+          visitors: totalVisitors,
+          messages: Math.floor(totalVisitors * 0.4), // Higher message handling
+          faqs: 8, // Customer service handles more FAQs
+          articles: 6
+        });
+        setToday({
+          visitors: todayVisitors,
+          messages: todayMessages
+        });
+        setConversationRatioData({
+          leadsConverted: leadsConverted,
+          visitors: totalVisitors,
+          conversionRate: totalVisitors > 0 ? Math.round((leadsConverted / totalVisitors) * 100) : 0
+        });
+
+        // Handle Daily Analysis Data
+        if (dailyAnalysisResponse.status === 'fulfilled' && dailyAnalysisResponse.value.ok) {
+          const dailyAnalysis = await dailyAnalysisResponse.value.json();
+          console.log('📊 Customer Executive Daily Analysis Data:', dailyAnalysis);
           setDailyAnalysisData(dailyAnalysis);
         } else {
-          // Use fallback data if API fails
-          setDailyAnalysisData(fallbackData.dailyAnalysis);
+          console.warn('⚠️ Failed to load daily analysis data, using fallback');
+          setDailyAnalysisData([]);
         }
 
-        // Handle recent conversations data
-        if (recentConversationsRes.ok) {
-          const recentConversations = await recentConversationsRes.json();
+        // Handle Recent Conversations Data
+        if (recentConversationsResponse.status === 'fulfilled' && recentConversationsResponse.value.ok) {
+          const recentConversations = await recentConversationsResponse.value.json();
+          console.log('📊 Customer Executive Recent Conversations:', recentConversations);
           setRecentConversationsData(recentConversations);
         } else {
-          // Use fallback data if API fails
-          setRecentConversationsData(fallbackData.recentConversations);
+          console.warn('⚠️ Failed to load recent conversations data, using fallback');
+          setRecentConversationsData([]);
         }
 
-      } catch (e) {
-        console.error('Error loading dashboard data:', e);
-        // Use fallback data when API calls fail completely
-        setDailyVisitorsData(fallbackData.dailyVisitors);
-        setConversationRatioData(fallbackData.conversationRatio);
-        setDailyAnalysisData(fallbackData.dailyAnalysis);
-        setRecentConversationsData(fallbackData.recentConversations);
-        setError(null); // Don't show error, just use fallback data
+        // Create Daily Visitors Chart Data
+        const last7DaysLabels = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          return date.toLocaleDateString('en-US', { weekday: 'short' });
+        });
+        const last7DaysData = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          const dayString = date.toISOString().split('T')[0];
+          return visitors.filter((v: any) => v.createdAt && v.createdAt.startsWith(dayString)).length;
+        });
+
+        setDailyVisitorsData({
+          labels: last7DaysLabels,
+          datasets: [{
+            label: 'Daily Visitors',
+            data: last7DaysData,
+            borderColor: 'rgb(34, 197, 94)', // Green for customer service
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.4
+          }]
+        });
+
+      } catch (e: any) {
+        console.error('❌ Error loading customer executive dashboard data:', e);
+        setError(`Failed to load dashboard data: ${e.message || 'Unknown error'}`);
+        // Fallback to static data
+        setTotals({ visitors: 20, messages: 8, faqs: 8, articles: 6 });
+        setToday({ visitors: 2, messages: 2 });
+        setDailyVisitorsData({
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Daily Visitors',
+            data: [6, 9, 4, 7, 11, 8, 13],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.4
+          }]
+        });
+        setConversationRatioData({ leadsConverted: 4, visitors: 20, conversionRate: 20 });
+        setDailyAnalysisData([]);
+        setRecentConversationsData([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [API_BASE, token, router]);
+  }, [token, user]);
 
-  // Calculate statistics from real data
-  const totalVisitors = conversationRatioData?.visitors || 0;
   const leadsAcquired = conversationRatioData?.leadsConverted || 0;
-  const chatbotEnquiries = Math.round(totalVisitors * 0.8);
-  const pendingConversations = Math.round(totalVisitors * 0.2);
+  const chatbotEnquiries = totals?.messages || 0;
+  const pendingConversations = totals ? Math.max(0, totals.visitors - leadsAcquired) : 0;
 
-  // Don't render if user is not an executive type
-  if (!user || !['executive', 'sales-executive', 'customer-executive'].includes(user.role)) {
-    console.log('❌ CustomerExecutiveDashboard: User not authorized to view this dashboard', { userRole: user?.role });
-    return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center space-x-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
   }
-
-  console.log('🎨 CustomerExecutiveDashboard: Rendering...', { 
-    loading, 
-    error, 
-    hasUser: !!user, 
-    userRole: user?.role,
-    hasDailyVisitorsData: !!dailyVisitorsData,
-    hasConversationRatioData: !!conversationRatioData
-  });
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar userRole={user.role} userName={user.name} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-0 ml-0">
-        <DashboardHeader userRole={user.role} userName={user.name} />
-        
-        <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+      <Sidebar userRole={user?.role || "customer-executive"} userName={user?.name || "Customer Executive"} />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader userRole={user?.role || "customer-executive"} userName={user?.name || "Customer Executive"} />
+
+        <div className="flex-1 p-2 sm:p-2.5 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
           {/* Page Header */}
-          <div className="mb-8">
+          <div className="mb-2">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Executive Dashboard</h1>
-                <p className="text-gray-600">Welcome back, {user?.name}! Here&apos;s your performance overview.</p>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900 mb-0.5">
+                  Customer Service Dashboard
+                </h1>
+                <p className="text-xs text-gray-600">
+                  Welcome back, {user?.name || "Customer Executive"}! Here&apos;s your service overview.
+                </p>
               </div>
             </div>
           </div>
 
-          {loading && (
-            <div className="flex items-center justify-center h-64">
-              <div className="flex items-center space-x-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <div className="text-gray-600">Loading dashboard...</div>
-              </div>
-            </div>
-          )}
-          
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6 shadow-sm">
               <div className="flex items-center">
@@ -336,70 +242,70 @@ export default function ExecutiveDashboard() {
               </div>
             </div>
           )}
-          
-          {!loading && (
+
+          {totals && today && (
             <>
               {/* Stat Boxes - First Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-2 sm:mb-3">
                 <div className="group h-full">
                   <StatBox
-                    title="Total Visitors"
-                    value={totalVisitors}
-                    icon="👥"
-                    color="blue"
-                    change={{ value: 8, isPositive: true }}
-                  />
-                </div>
-                <div className="group h-full">
-                  <StatBox
-                    title="Leads Acquired"
-                    value={leadsAcquired}
-                    icon="🎯"
+                    title="Customer Inquiries"
+                    value={totals.visitors}
+                    icon="📞"
                     color="green"
-                    change={{ value: 12, isPositive: true }}
-                  />
-                </div>
-                <div className="group h-full">
-                  <StatBox
-                    title="Chatbot Enquiries"
-                    value={chatbotEnquiries}
-                    icon="🤖"
-                    color="orange"
                     change={{ value: 6, isPositive: true }}
                   />
                 </div>
                 <div className="group h-full">
                   <StatBox
-                    title="Pending Conversations"
+                    title="Issues Resolved"
+                    value={leadsAcquired}
+                    icon="✅"
+                    color="blue"
+                    change={{ value: 4, isPositive: true }}
+                  />
+                </div>
+                <div className="group h-full">
+                  <StatBox
+                    title="Support Messages"
+                    value={chatbotEnquiries}
+                    icon="💬"
+                    color="orange"
+                    change={{ value: 10, isPositive: true }}
+                  />
+                </div>
+                <div className="group h-full">
+                  <StatBox
+                    title="Pending Cases"
                     value={pendingConversations}
-                    icon="⏳"
+                    icon="⏰"
                     color="red"
-                    change={{ value: 3, isPositive: false }}
+                    change={{ value: 2, isPositive: false }}
                   />
                 </div>
               </div>
 
               {/* Charts - Second Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2 sm:mb-3">
                 <div className="group h-full">
                   {dailyVisitorsData && (
-                    <DailyVisitorsChart 
-                      data={dailyVisitorsData} 
+                    <DailyVisitorsChart
+                      data={dailyVisitorsData}
                     />
                   )}
                 </div>
                 <div className="group h-full">
-                {conversationRatioData && (
-                  <ConversionRateChart 
-                    visitors={conversationRatioData.visitors} 
-                    leadsConverted={conversationRatioData.leadsConverted} 
-                  />
-                )}
+                  {conversationRatioData && (
+                    <ConversionRateChart
+                      visitors={conversationRatioData.visitors}
+                      leadsConverted={conversationRatioData.leadsConverted}
+                    />
+                  )}
                 </div>
               </div>
 
               {/* Tables - Third Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 <div className="group">
                   <DailyAnalysisTable data={dailyAnalysisData} />
                 </div>
@@ -414,4 +320,3 @@ export default function ExecutiveDashboard() {
     </div>
   );
 }
- 
