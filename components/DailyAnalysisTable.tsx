@@ -285,22 +285,22 @@ export default function DailyAnalysisTable({ data }: DailyAnalysisTableProps) {
                         <div className={`w-2 h-2 rounded-full ${activity.color} mr-2`}></div>
                         <span className="text-sm text-gray-600">{activity.label}</span>
                       </div>
-                    </td>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-lg font-semibold text-blue-600">{item.visitors}</span>
-                    </td>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-lg font-semibold text-green-600">{item.enquiries}</span>
-                    </td>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-lg font-semibold text-purple-600">{item.messages}</span>
-                    </td>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getConversionRateColor(item.conversionRate)}`}>
                         {item.conversionRate.toFixed(1)}%
-                      </span>
-                    </td>
-                  </tr>
+                    </span>
+                  </td>
+                </tr>
                 );
               })}
             </tbody>

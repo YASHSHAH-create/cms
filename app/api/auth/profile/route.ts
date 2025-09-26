@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { connectMongo } from '@/lib/mongo';

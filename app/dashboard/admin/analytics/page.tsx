@@ -97,9 +97,9 @@ export default function AdminAnalyticsPage() {
 
     const loadAnalyticsData = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        
+      setLoading(true);
+      setError(null);
+      
         console.log('🚀 Loading synchronized analytics data...');
         
         const token = localStorage.getItem('ems_token');
@@ -296,7 +296,7 @@ export default function AdminAnalyticsPage() {
         const conversionRate = totalVisitors > 0 ? Math.round((leadsConverted / totalVisitors) * 100) : 0;
         const totalMessages = Math.floor(totalVisitors * 0.3);
         const totalEnquiries = dailyAnalysisData.reduce((sum, day) => sum + day.enquiries, 0);
-
+        
         const performanceMetrics = {
           visitorsHandled: Math.min(Math.round((totalVisitors / 50) * 100), 100),
           enquiriesProcessed: Math.min(Math.round((totalEnquiries / 20) * 100), 100),
@@ -407,7 +407,7 @@ export default function AdminAnalyticsPage() {
           <div className="flex-1 flex items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <div className="text-gray-600">Loading analytics...</div>
+            <div className="text-gray-600">Loading analytics...</div>
             </div>
           </div>
         </div>
@@ -468,7 +468,7 @@ export default function AdminAnalyticsPage() {
                 Last updated: {new Date().toLocaleTimeString()}
               </div>
             </div>
-          </div>
+              </div>
 
           {/* Time Range Selector */}
           <div className="mb-6">
@@ -557,9 +557,9 @@ export default function AdminAnalyticsPage() {
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Active Agents</p>
                   <p className="text-xl font-bold text-gray-900">{analyticsData.activeAgents}</p>
-                </div>
               </div>
             </div>
+          </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all">
               <div className="flex items-center">
@@ -567,11 +567,11 @@ export default function AdminAnalyticsPage() {
                   <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2m-1 4l2 2 4-4" />
                   </svg>
-                </div>
+              </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Enquiries</p>
                   <p className="text-xl font-bold text-gray-900">{analyticsData.totalEnquiries}</p>
-                </div>
+            </div>
               </div>
             </div>
           </div>
@@ -587,8 +587,8 @@ export default function AdminAnalyticsPage() {
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   <span>Visitors</span>
-                </div>
               </div>
+            </div>
               <div className="h-64">
                 <Line 
                   data={{
@@ -609,8 +609,8 @@ export default function AdminAnalyticsPage() {
                   }} 
                   options={chartOptions} 
                 />
-              </div>
             </div>
+          </div>
 
             {/* Conversion Trend */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
@@ -657,8 +657,8 @@ export default function AdminAnalyticsPage() {
                   }} 
                 />
               </div>
+              </div>
             </div>
-          </div>
 
           {/* Charts Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -754,7 +754,7 @@ export default function AdminAnalyticsPage() {
                 />
               </div>
             </div>
-          </div>
+      </div>
 
           {/* Performance Metrics Radar Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 hover:shadow-md transition-all">
@@ -781,7 +781,7 @@ export default function AdminAnalyticsPage() {
                       analyticsData.performanceMetrics.dailyActivity
                     ],
                     backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
+                      borderColor: 'rgba(59, 130, 246, 1)',
                     borderWidth: 2,
                     pointBackgroundColor: 'rgba(59, 130, 246, 1)',
                     pointBorderColor: '#fff',
@@ -825,7 +825,7 @@ export default function AdminAnalyticsPage() {
                 }} 
               />
             </div>
-          </div>
+                            </div>
 
           {/* Recent Activity */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
@@ -840,21 +840,21 @@ export default function AdminAnalyticsPage() {
                           {activity.visitor.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{activity.visitor}</p>
-                        <p className="text-xs text-gray-500">{activity.service}</p>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{activity.visitor}</p>
+                      <p className="text-xs text-gray-500">{activity.service}</p>
                       </div>
-                    </div>
+                          </div>
                     <div className="text-right">
                       <div className="flex items-center space-x-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          activity.status === 'converted' ? 'bg-green-100 text-green-800' :
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        activity.status === 'converted' ? 'bg-green-100 text-green-800' :
                           activity.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                          activity.status === 'enquiry_required' ? 'bg-yellow-100 text-yellow-800' :
+                        activity.status === 'enquiry_required' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
-                        }`}>
-                          {activity.status}
-                        </span>
+                      }`}>
+                        {activity.status}
+                          </span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">{activity.date} at {activity.time}</p>
                     </div>
@@ -866,7 +866,7 @@ export default function AdminAnalyticsPage() {
                   <p>No recent activity</p>
                 </div>
               )}
-            </div>
+          </div>
           </div>
         </div>
       </div>
