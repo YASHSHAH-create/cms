@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
+import AdminUserEditor from '@/components/AdminUserEditor';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -67,6 +68,7 @@ export default function AdminAgentsPage() {
   
   // Popup states
   const [showAddAgent, setShowAddAgent] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   
   // Form states
   const [formData, setFormData] = useState<AgentFormData>({
@@ -314,6 +316,24 @@ export default function AdminAgentsPage() {
     } finally {
       setFormLoading(false);
     }
+  };
+
+  // User management functions
+  const handleUserUpdate = (updatedUser: User) => {
+    // Update the user in all relevant state arrays
+    setUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
+    setApprovedUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
+    setPendingUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
+    
+    console.log('✅ User updated in local state:', updatedUser);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+  };
+
+  const handleCloseEditor = () => {
+    setEditingUser(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -996,6 +1016,9 @@ export default function AdminAgentsPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Last Login
                             </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -1036,6 +1059,14 @@ export default function AdminAgentsPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button
+                                  onClick={() => handleEditUser(user)}
+                                  className="text-blue-600 hover:text-blue-900 mr-3"
+                                >
+                                  Edit
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -1126,6 +1157,16 @@ export default function AdminAgentsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* User Editor Modal */}
+      {editingUser && token && (
+        <AdminUserEditor
+          user={editingUser}
+          onClose={handleCloseEditor}
+          onUpdate={handleUserUpdate}
+          token={token}
+        />
       )}
                   </div>
                   </div>

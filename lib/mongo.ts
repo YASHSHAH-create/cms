@@ -73,16 +73,22 @@ export async function connectMongo() {
   }
 }
 
-// Handle connection events
-mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
+// Handle connection events (only add listeners once)
+if (mongoose.connection.listenerCount('error') === 0) {
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+  });
+}
 
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
-  connectingPromise = null;
-});
+if (mongoose.connection.listenerCount('disconnected') === 0) {
+  mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+    connectingPromise = null;
+  });
+}
 
-mongoose.connection.on('reconnected', () => {
-  console.log('MongoDB reconnected');
-});
+if (mongoose.connection.listenerCount('reconnected') === 0) {
+  mongoose.connection.on('reconnected', () => {
+    console.log('MongoDB reconnected');
+  });
+}

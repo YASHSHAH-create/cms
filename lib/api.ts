@@ -1,5 +1,5 @@
 // API utility for making requests to Next.js API routes
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 // Helper function to get auth headers
 export function getAuthHeaders(): HeadersInit {
@@ -12,9 +12,21 @@ export function getAuthHeaders(): HeadersInit {
 
 // Helper function to handle API responses
 async function handleResponse(response: Response) {
+  console.log('API Response status:', response.status, response.statusText);
+  console.log('API Response URL:', response.url);
+  
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(errorData.message || `HTTP ${response.status}`);
+    const errorText = await response.text();
+    console.error('API Error response:', errorText);
+    
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { message: errorText || 'Network error' };
+    }
+    
+    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
   }
   return response.json();
 }
@@ -24,12 +36,18 @@ export const api = {
   // Authentication
   auth: {
     login: async (credentials: { username: string; password: string }) => {
+      console.log('Making login request to:', `${API_BASE}/api/auth/login`);
+      console.log('Login credentials:', { username: credentials.username, password: '***' });
+      
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
-      return handleResponse(response);
+      
+      const result = await handleResponse(response);
+      console.log('Login result:', { success: result.success, user: result.user?.name });
+      return result;
     },
 
     register: async (userData: any) => {

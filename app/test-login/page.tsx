@@ -1,100 +1,98 @@
 'use client';
-import { useState } from 'react';
 
-export default function TestLogin() {
-  const [credentials, setCredentials] = useState({ username: 'admin', password: 'admin123' });
-  const [result, setResult] = useState<any>(null);
+import React, { useState } from 'react';
+
+export default function TestLoginPage() {
+  const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const testLogin = async () => {
+  const testDirectFetch = async () => {
     setLoading(true);
+    setResult('Testing...');
+    
     try {
+      console.log('Testing direct fetch...');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({ username: 'admin', password: 'admin123' })
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       const data = await response.json();
-      setResult({ status: response.status, data });
+      console.log('Response data:', data);
+      
+      if (data.success) {
+        setResult(`✅ SUCCESS: Logged in as ${data.user.name} (${data.user.role})`);
+      } else {
+        setResult(`❌ FAILED: ${data.message}`);
+      }
     } catch (error) {
-      setResult({ error: error.message });
+      console.error('Test error:', error);
+      setResult(`❌ ERROR: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const testUsers = async () => {
+  const testWithAPI = async () => {
     setLoading(true);
+    setResult('Testing with API helper...');
+    
     try {
-      const response = await fetch('/api/test-login');
-      const data = await response.json();
-      setResult({ status: response.status, data });
+      const api = await import('@/lib/api');
+      const data = await api.api.auth.login({ username: 'admin', password: 'admin123' });
+      
+      if (data.success) {
+        setResult(`✅ API SUCCESS: Logged in as ${data.user.name} (${data.user.role})`);
+      } else {
+        setResult(`❌ API FAILED: ${data.message}`);
+      }
     } catch (error) {
-      setResult({ error: error.message });
+      console.error('API test error:', error);
+      setResult(`❌ API ERROR: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Login Test Page</h1>
-      
-      <div className="bg-blue-50 p-4 rounded mb-6">
-        <h3 className="font-bold mb-2">Available Login Credentials:</h3>
-        <ul className="text-sm space-y-1">
-          <li><strong>Admin:</strong> admin / admin123</li>
-          <li><strong>Executive:</strong> sanjana / exec123</li>
-          <li><strong>Sales:</strong> shreyas / sales123</li>
-        </ul>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Username:</label>
-          <input
-            type="text"
-            value={credentials.username}
-            onChange={(e) => setCredentials({...credentials, username: e.target.value})}
-            className="w-full p-2 border rounded"
-          />
-        </div>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Login Debug Test</h1>
         
-        <div>
-          <label className="block text-sm font-medium mb-2">Password:</label>
-          <input
-            type="password"
-            value={credentials.password}
-            onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        
-        <div className="space-x-4">
+        <div className="space-y-4">
           <button
-            onClick={testLogin}
+            onClick={testDirectFetch}
             disabled={loading}
-            className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Testing...' : 'Test Login'}
+            Test Direct Fetch
           </button>
           
           <button
-            onClick={testUsers}
+            onClick={testWithAPI}
             disabled={loading}
-            className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 ml-4"
           >
-            {loading ? 'Loading...' : 'Check Users'}
+            Test with API Helper
           </button>
         </div>
         
         {result && (
-          <div className="mt-6 p-4 bg-gray-100 rounded">
+          <div className="mt-8 p-4 bg-white rounded-lg shadow">
             <h3 className="font-bold mb-2">Result:</h3>
-            <pre className="text-sm overflow-auto">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+            <pre className="whitespace-pre-wrap">{result}</pre>
           </div>
         )}
+        
+        <div className="mt-8">
+          <a href="/login" className="text-blue-600 hover:underline">
+            ← Back to Login
+          </a>
+        </div>
       </div>
     </div>
   );

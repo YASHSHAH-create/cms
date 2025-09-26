@@ -42,7 +42,14 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Server error. Please try again.');
+      // More detailed error handling
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Network error. Please check your connection.');
+      } else if (err.message) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('Server error. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

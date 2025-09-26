@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import UserProfileEditor from '@/components/UserProfileEditor';
 
-export default function ExecutiveProfilePage() {
+export default function AdminProfilePage() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function ExecutiveProfilePage() {
 
       try {
         const userData = JSON.parse(storedUser);
-        if (!['sales-executive', 'customer-executive'].includes(userData.role)) {
+        if (userData.role !== 'admin') {
           router.push('/dashboard/' + userData.role);
           return;
         }
@@ -62,7 +62,7 @@ export default function ExecutiveProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* Sidebar */}
-        <Sidebar userRole={user.role} />
+        <Sidebar userRole="admin" />
         
         {/* Main Content */}
         <div className="flex-1 ml-64">
