@@ -223,12 +223,29 @@ export default function AdminVisitorsPage() {
       });
 
       if (response.ok) {
-        const updatedVisitor = await response.json();
-        setVisitors(prev => prev.map(v => 
-          v._id === visitorId ? { ...v, ...updatedVisitor } : v
+        const responseData = await response.json();
+        // Update the visitor in the local state
+        setVisitors(prev => prev.map(visitor => 
+          visitor._id === visitorId 
+            ? { 
+                ...visitor, 
+                salesExecutive: salesExecutiveId, 
+                salesExecutiveName: salesExecutiveName,
+                lastModifiedAt: new Date()
+              }
+            : visitor
         ));
         setAssigningSalesExecutive(null);
-        console.log('Sales executive assigned successfully');
+        
+        // Show success notification
+        console.log(`✅ Sales Executive ${salesExecutiveName} assigned to visitor ${visitorId}`);
+        setError(null); // Clear any previous errors
+        
+        // Force refresh data from server to ensure consistency
+        setTimeout(() => {
+          console.log('🔄 Refreshing data after sales executive assignment...');
+          loadVisitors();
+        }, 1000);
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(`Failed to assign sales executive: ${errorData.message || 'Unknown error'}`);
@@ -1573,11 +1590,49 @@ export default function AdminVisitorsPage() {
                        {/* Sales Executive */}
                        {visibleColumns['Sales Executive'] && (
                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.salesExecutiveName || 'Unassigned'}
+                           <div className="flex items-center space-x-2">
+                             {/* Display current sales executive name */}
+                             <span className="text-gray-900 font-medium min-w-0 flex-1">
+                               {visitor.salesExecutiveName || 'Unassigned'}
+                             </span>
+                             {/* Assignment dropdown */}
+                             <select
+                               className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               value={visitor.salesExecutive || ''}
+                               onChange={(e) => {
+                                 const selectedSalesExec = salesExecutives.find(exec => (exec._id || exec.id) === e.target.value);
+                                 if (selectedSalesExec) {
+                                   const salesExecId = selectedSalesExec._id || selectedSalesExec.id;
+                                   const salesExecName = selectedSalesExec.name || selectedSalesExec.username;
+                                   
+                                   if (!salesExecId || !salesExecName) {
+                                     setError('Invalid sales executive data selected');
+                                     return;
+                                   }
+                                   
+                                   assignSalesExecutiveToVisitor(visitor._id, salesExecId, salesExecName);
+                                 } else if (e.target.value === '') {
+                                   // Handle unassigning
+                                   assignSalesExecutiveToVisitor(visitor._id, '', '');
+                                 }
+                               }}
+                             >
+                               <option value="">Unassigned</option>
+                               {salesExecutives.length > 0 ? (
+                                 salesExecutives.map(exec => (
+                                   <option key={exec._id || exec.id} value={exec._id || exec.id}>
+                                     {exec.name || exec.username || 'Unknown Sales Executive'}
+                                   </option>
+                                 ))
+                               ) : (
+                                 <option value="" disabled>Loading sales executives...</option>
+                               )}
+                             </select>
+                           </div>
                            {/* Debug info - remove in production */}
                            {process.env.NODE_ENV === 'development' && (
                              <div className="text-xs text-gray-400 mt-1">
-                               Debug: SE={visitor.salesExecutiveName || 'null'}, Agent={visitor.agentName || 'null'}
+                               Debug: SE={visitor.salesExecutiveName || 'null'}, SE_ID={visitor.salesExecutive || 'null'}
                              </div>
                            )}
                          </td>
