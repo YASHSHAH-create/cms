@@ -32,6 +32,14 @@ export default function ExecutiveDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // API base URL - always use current domain
+  const API_BASE = (() => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  })();
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);

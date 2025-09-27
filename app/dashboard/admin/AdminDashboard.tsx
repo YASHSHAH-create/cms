@@ -89,7 +89,13 @@ export default function AdminDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showEnquiryForm, setShowEnquiryForm] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  // API base URL - always use current domain
+  const API_BASE = (() => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  })();
   const permissions = user ? getRolePermissions(user) : null;
 
   // Fallback data when API is not available
