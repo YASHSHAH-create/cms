@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
-import VisitorNew from '@/lib/models/VisitorNew';
+import Enquiry from '@/lib/models/Enquiry';
 import Visitor from '@/lib/models/Visitor';
 import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
 
@@ -22,32 +22,26 @@ async function deleteEnquiry(request: NextRequest, user: any, context: { params:
       }, { status: 400 });
     }
 
-    // Try to find and delete from both collections
-    let deletedVisitor = await VisitorNew.findByIdAndDelete(enquiryId);
-    let isNewModel = true;
+    // Delete from Enquiry collection
+    let deletedEnquiry = await Enquiry.findByIdAndDelete(enquiryId);
     
-    if (!deletedVisitor) {
-      deletedVisitor = await Visitor.findByIdAndDelete(enquiryId);
-      isNewModel = false;
-    }
-    
-    if (!deletedVisitor) {
+    if (!deletedEnquiry) {
       return NextResponse.json({
         success: false,
         message: 'Enquiry not found'
       }, { status: 404 });
     }
 
-    console.log('✅ Enquiry deleted successfully:', deletedVisitor._id);
+    console.log('✅ Enquiry deleted successfully:', deletedEnquiry._id);
 
     return NextResponse.json({
       success: true,
       message: 'Enquiry deleted successfully',
       deletedEnquiry: {
-        _id: deletedVisitor._id.toString(),
-        name: deletedVisitor.name,
-        email: deletedVisitor.email,
-        phone: deletedVisitor.phone
+        _id: deletedEnquiry._id.toString(),
+        visitorName: deletedEnquiry.visitorName,
+        email: deletedEnquiry.email,
+        phoneNumber: deletedEnquiry.phoneNumber
       }
     });
 

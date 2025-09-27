@@ -9,6 +9,9 @@ import ConversionRateChart from '@/components/ConversationRatioChart';
 import DailyAnalysisTable from '@/components/DailyAnalysisTable';
 import RecentConversations from '@/components/RecentConversations';
 import { useAuth } from '@/lib/hooks/useAuth';
+import LoadingState, { SkeletonCard, SkeletonChart, SkeletonTable } from '@/components/LoadingState';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import enhancedApi from '@/lib/apiWrapper';
 
 // Dashboard data types
 type DashboardTotals = {
@@ -110,21 +113,15 @@ export default function OverviewPage() {
         
         console.log('🚀 Loading dashboard data...');
         
-        const token = localStorage.getItem('ems_token');
-        const headers = token ? { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        } : { 'Content-Type': 'application/json' };
-
-        // Load all data in parallel with proper error handling
+        // Use enhanced API with fallbacks
         const [
-          visitorsResponse,
-          dailyAnalysisResponse,
-          recentConversationsResponse
+          visitorsResult,
+          dailyAnalysisResult,
+          recentConversationsResult
         ] = await Promise.allSettled([
-          fetch('/api/visitors?limit=100', { headers }),
-          fetch('/api/analytics/daily-analysis?limit=7', { headers }),
-          fetch('/api/analytics/recent-conversations?limit=5', { headers })
+          enhancedApi.visitors.list({ limit: 100 }),
+          enhancedApi.analytics.getDailyAnalysis({ limit: 7 }),
+          enhancedApi.analytics.getRecentConversations({ limit: 5 })
         ]);
 
         // Process visitors data
@@ -132,8 +129,8 @@ export default function OverviewPage() {
         let visitors: any[] = [];
         let leadsConverted = 0;
         
-        if (visitorsResponse.status === 'fulfilled' && visitorsResponse.value.ok) {
-          const visitorsData = await visitorsResponse.value.json();
+        if (visitorsResult.status === 'fulfilled' && visitorsResult.value.success) {
+          const visitorsData = visitorsResult.value.data;
           totalVisitors = visitorsData.total || visitorsData.count || 0;
           visitors = visitorsData.items || visitorsData.users || [];
           
@@ -182,8 +179,8 @@ export default function OverviewPage() {
         });
 
         // Process daily analysis data
-        if (dailyAnalysisResponse.status === 'fulfilled' && dailyAnalysisResponse.value.ok) {
-          const dailyAnalysis = await dailyAnalysisResponse.value.json();
+        if (dailyAnalysisResult.status === 'fulfilled' && dailyAnalysisResult.value.success) {
+          const dailyAnalysis = dailyAnalysisResult.value.data;
           console.log('✅ Daily analysis data loaded:', dailyAnalysis.length, 'days');
           setDailyAnalysisData(Array.isArray(dailyAnalysis) ? dailyAnalysis : []);
         } else {
@@ -215,8 +212,8 @@ export default function OverviewPage() {
         }
 
         // Process recent conversations data
-        if (recentConversationsResponse.status === 'fulfilled' && recentConversationsResponse.value.ok) {
-          const recentConversations = await recentConversationsResponse.value.json();
+        if (recentConversationsResult.status === 'fulfilled' && recentConversationsResult.value.success) {
+          const recentConversations = recentConversationsResult.value.data;
           console.log('✅ Recent conversations data loaded:', recentConversations.length, 'conversations');
           setRecentConversationsData(Array.isArray(recentConversations) ? recentConversations : []);
         } else {
@@ -311,9 +308,9 @@ export default function OverviewPage() {
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-100">
-        <Sidebar userRole="admin" userName="Admin" />
+        <Sidebar userRole="admin" userName="Administrator" />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader userRole="admin" userName="Admin" />
+          <DashboardHeader userRole="admin" userName="Administrator" />
           <div className="flex-1 flex items-center justify-center">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -326,11 +323,12 @@ export default function OverviewPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar userRole="admin" userName="Admin" />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader userRole="admin" userName="Admin" />
+    <ErrorBoundary>
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar userRole="admin" userName="Administrator" />
+        
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <DashboardHeader userRole="admin" userName="Administrator" />
         
         <div className="flex-1 p-2 sm:p-2.5 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
           {/* Page Header */}
@@ -447,5 +445,6 @@ export default function OverviewPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

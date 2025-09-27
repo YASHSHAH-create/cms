@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
-import VisitorNew from '@/lib/models/VisitorNew';
 import Visitor from '@/lib/models/Visitor';
+import Enquiry from '@/lib/models/Enquiry';
 import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
 
 async function assignAgent(request: NextRequest, user: any) {
@@ -25,7 +25,7 @@ async function assignAgent(request: NextRequest, user: any) {
     }
 
     // Find the visitor in both collections
-    let visitor = await VisitorNew.findById(visitorId);
+    let visitor = await Visitor.findById(visitorId);
     let isNewModel = true;
     
     if (!visitor) {
@@ -45,7 +45,7 @@ async function assignAgent(request: NextRequest, user: any) {
     
     // Update the visitor with agent assignment using the correct model
     const updatedVisitor = isNewModel 
-      ? await VisitorNew.findByIdAndUpdate(
+      ? await Visitor.findByIdAndUpdate(
           visitorId,
           {
             assignedAgent: cleanedAgentId,

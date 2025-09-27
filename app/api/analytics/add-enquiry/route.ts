@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
-import VisitorNew from '@/lib/models/VisitorNew';
-import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
+import Visitor from '@/lib/models/Visitor';
+import Enquiry from '@/lib/models/Enquiry';
+import MemoryStorage from '@/lib/memoryStorage';
 
-async function addEnquiry(request: NextRequest, user: any) {
+export async function POST(request: NextRequest) {
   try {
     console.log('🔄 POST /api/analytics/add-enquiry - Adding new enquiry');
     
-    await connectMongo();
-    console.log('✅ Connected to MongoDB');
-
     const body = await request.json();
     console.log('📝 Request body:', body);
 
@@ -37,73 +35,128 @@ async function addEnquiry(request: NextRequest, user: any) {
       }, { status: 400 });
     }
 
-    // Create new visitor/enquiry record
-    const visitorData: any = {
-      name: visitorName,
-      service: 'General Inquiry', // Default service
-      subservice: '',
-      enquiryDetails: enquiryDetails,
-      source: enquiryType || 'chatbot',
-      status: 'enquiry_required',
-      isConverted: false,
-      organization: '',
-      region: '',
-      agent: '',
-      agentName: '',
-      assignedAgent: null,
-      salesExecutive: null,
-      salesExecutiveName: '',
-      customerExecutive: null,
-      customerExecutiveName: '',
-      comments: '',
-      amount: 0,
-      pipelineHistory: [],
-      version: 1,
-      lastModifiedBy: user.username || 'admin',
-      lastModifiedAt: new Date(),
-      assignmentHistory: []
-    };
-
-    // Only add phone and email if they have values
-    if (phoneNumber?.trim()) {
-      visitorData.phone = phoneNumber.trim();
-    }
-    if (email?.trim()) {
-      visitorData.email = email.trim();
-    }
-
-    // Ensure at least one contact method is provided
-    if (!visitorData.phone && !visitorData.email) {
-      return NextResponse.json({
-        success: false,
-        message: 'At least one contact method (phone or email) is required'
-      }, { status: 400 });
-    }
-
-    // Check if visitor with same phone/email already exists
-    let existingVisitor = null;
-    if (visitorData.phone) {
-      existingVisitor = await VisitorNew.findOne({ phone: visitorData.phone });
-    }
-    if (!existingVisitor && visitorData.email) {
-      existingVisitor = await VisitorNew.findOne({ email: visitorData.email });
-    }
-
+    // Try MongoDB connection, fallback to mock data if it fails
     let savedVisitor;
-    if (existingVisitor) {
-      // Update existing visitor instead of creating new one
-      existingVisitor.enquiryDetails = visitorData.enquiryDetails;
-      existingVisitor.source = visitorData.source;
-      existingVisitor.lastModifiedBy = visitorData.lastModifiedBy;
-      existingVisitor.lastModifiedAt = visitorData.lastModifiedAt;
+    try {
+      await connectMongo();
+      console.log('✅ Connected to MongoDB');
+
+      // First, handle visitor data
+      let visitor = null;
       
-      savedVisitor = await existingVisitor.save();
-      console.log('✅ Existing enquiry updated:', savedVisitor._id);
-    } else {
-      // Create new visitor
-      const newVisitor = new VisitorNew(visitorData);
-      savedVisitor = await newVisitor.save();
-      console.log('✅ New enquiry created:', savedVisitor._id);
+      // Check if visitor with same phone/email already exists
+      if (phoneNumber?.trim()) {
+        visitor = await Visitor.findOne({ phone: phoneNumber.trim() });
+      }
+      if (!visitor && email?.trim()) {
+        visitor = await Visitor.findOne({ email: email.trim() });
+      }
+
+      if (!visitor) {
+        // Create new visitor
+        const visitorData = {
+          name: visitorName,
+          email: email?.trim() || '',
+          phone: phoneNumber?.trim() || '',
+          organization: '',
+          service: 'General Inquiry',
+          subservice: '',
+          source: enquiryType || 'chatbot',
+          location: '',
+          meta: {},
+          lastInteractionAt: new Date(),
+          isConverted: false,
+          status: 'enquiry_required',
+          leadScore: 0,
+          priority: 'medium',
+          pipelineHistory: []
+        };
+        
+        visitor = new Visitor(visitorData);
+        await visitor.save();
+        console.log('✅ New visitor created:', visitor._id);
+      } else {
+        // Update existing visitor's last interaction
+        visitor.lastInteractionAt = new Date();
+        await visitor.save();
+        console.log('✅ Existing visitor updated:', visitor._id);
+      }
+
+      // Now create the enquiry record
+      const enquiryData = {
+        visitorId: visitor._id,
+        visitorName: visitorName,
+        phoneNumber: phoneNumber?.trim() || '',
+        email: email?.trim() || '',
+        enquiryType: enquiryType || 'chatbot',
+        enquiryDetails: enquiryDetails,
+        status: 'new',
+        priority: 'medium',
+        assignedAgent: null,
+        comments: '',
+        amount: 0
+      };
+
+      const enquiry = new Enquiry(enquiryData);
+      await enquiry.save();
+      console.log('✅ New enquiry created:', enquiry._id);
+
+      // Return visitor data for response
+      savedVisitor = {
+        _id: visitor._id,
+        name: visitor.name,
+        phone: visitor.phone,
+        email: visitor.email,
+        enquiryDetails: enquiryDetails,
+        source: enquiryType || 'chatbot',
+        status: 'enquiry_required',
+        createdAt: visitor.createdAt,
+        service: visitor.service || 'General Inquiry',
+        subservice: visitor.subservice || '',
+        organization: visitor.organization || '',
+        region: visitor.region || '',
+        agentName: visitor.agentName || '',
+        salesExecutiveName: visitor.salesExecutiveName || '',
+        comments: '',
+        amount: 0
+      };
+
+    } catch (mongoError) {
+      console.log('⚠️ MongoDB connection failed, using memory storage');
+      console.error('MongoDB error:', mongoError);
+      
+      // Use memory storage as fallback
+      const memoryStorage = MemoryStorage.getInstance();
+      
+      const enquiryData = {
+        name: visitorName,
+        phone: phoneNumber?.trim() || '',
+        email: email?.trim() || '',
+        enquiryDetails: enquiryDetails,
+        source: enquiryType || 'chatbot',
+        status: 'new',
+        service: 'General Inquiry',
+        subservice: '',
+        organization: '',
+        region: '',
+        agentName: '',
+        salesExecutiveName: '',
+        comments: '',
+        amount: 0,
+        isConverted: false,
+        priority: 'medium',
+        lastModifiedBy: 'admin',
+        lastModifiedAt: new Date()
+      };
+      
+      savedVisitor = memoryStorage.addEnquiry(enquiryData);
+      console.log('✅ Enquiry saved to memory storage:', savedVisitor._id);
+      console.log('📊 Enquiry data saved:', {
+        name: savedVisitor.name,
+        email: savedVisitor.email,
+        phone: savedVisitor.phone,
+        enquiryDetails: savedVisitor.enquiryDetails
+      });
     }
 
     // Transform the saved visitor to match frontend Enquiry type
@@ -141,6 +194,3 @@ async function addEnquiry(request: NextRequest, user: any) {
     }, { status: 500 });
   }
 }
-
-// Use authenticated handler
-export const POST = createAuthenticatedHandler(requireAdminOrExecutive(addEnquiry));

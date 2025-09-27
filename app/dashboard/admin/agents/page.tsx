@@ -185,31 +185,9 @@ export default function AdminAgentsPage() {
           performanceData = [];
         }
 
-      // Force using hardcoded data for now to fix the display issue
-      console.log('🔄 Using hardcoded performance data to fix display issue');
-      const hardcodedData = [
-        {
-          agentId: '68c93445f67c14682fa5cd5c',
-          agentName: 'Test-SE',
-          visitorsHandled: 0,
-          enquiriesAdded: 0,
-          leadsConverted: 0
-        },
-        {
-          agentId: '68c93cfcef5d5f20eea31ed3',
-          agentName: 'Sanjana Pawar',
-          visitorsHandled: 35,
-          enquiriesAdded: 8,
-          leadsConverted: 8
-        },
-        {
-          agentId: '68c9514b236787c8fd6ae3ec',
-          agentName: 'Shreyas Salvi',
-          visitorsHandled: 2,
-          enquiriesAdded: 0,
-          leadsConverted: 2
-        }
-      ];
+      // Use actual performance data from API, no hardcoded data
+      console.log('🔄 Using API performance data');
+      const hardcodedData = performanceData; // Use real API data instead of hardcoded
       console.log('✅ Setting hardcoded performance data:', hardcodedData);
       setAgentPerformance(hardcodedData);
       
@@ -223,7 +201,7 @@ export default function AdminAgentsPage() {
             username: 'sanjana',
             email: 'sanjana@envirocarelabs.com',
             role: 'customer-executive',
-            name: 'Sanjana Pawar',
+            name: 'Customer Executive',
             createdAt: new Date().toISOString()
           },
           {

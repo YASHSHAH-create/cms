@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { connectMongo } from '@/lib/mongo';
 import Visitor from '@/lib/models/Visitor';
 import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
+import MemoryStorage from '@/lib/memoryStorage';
 
 async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) {
   try {
@@ -63,14 +64,15 @@ async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) 
 
     console.log('📊 Fetching executive enquiries with filter:', filter);
 
-    // Fetch enquiries with pagination
+    // Fetch enquiries with pagination - join Visitor and Enquiry tables
     const [enquiries, totalCount] = await Promise.all([
-      Visitor.find(filter)
+      Enquiry.find(filter)
+        .populate('visitorId', 'name email phone organization service source status createdAt')
         .sort({ createdAt: -1 })
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
         .lean(),
-      Visitor.countDocuments(filter)
+      Enquiry.countDocuments(filter)
     ]);
 
     console.log(`📊 Found ${enquiries.length} executive enquiries (page ${pageNum}/${Math.ceil(totalCount / limitNum)})`);
@@ -78,24 +80,24 @@ async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) 
     // Transform enquiries data for frontend
     const transformedEnquiries = enquiries.map((enquiry: any) => ({
       _id: enquiry._id.toString(),
-      name: enquiry.name || '',
-      email: enquiry.email || '',
-      phone: enquiry.phone || '',
-      organization: enquiry.organization || '',
-      service: enquiry.service || 'General Inquiry',
-      enquiryType: enquiry.enquiryType || enquiry.service || 'General Inquiry',
+      name: enquiry.visitorId?.name || enquiry.visitorName || '',
+      email: enquiry.visitorId?.email || enquiry.email || '',
+      phone: enquiry.visitorId?.phone || enquiry.phoneNumber || '',
+      organization: enquiry.visitorId?.organization || '',
+      service: enquiry.visitorId?.service || 'General Inquiry',
+      enquiryType: enquiry.enquiryType || 'chatbot',
       enquiryDetails: enquiry.enquiryDetails || '',
-      status: enquiry.status || 'enquiry_required',
+      status: enquiry.status || 'new',
       priority: enquiry.priority || 'medium',
       createdAt: enquiry.createdAt,
-      lastInteractionAt: enquiry.lastInteractionAt,
-      isConverted: enquiry.isConverted || false,
+      lastInteractionAt: enquiry.visitorId?.lastInteractionAt || enquiry.createdAt,
+      isConverted: enquiry.visitorId?.isConverted || false,
       customerExecutive: enquiry.customerExecutive || null,
       salesExecutive: enquiry.salesExecutive || null,
       assignedAgent: enquiry.assignedAgent || null,
       comments: enquiry.comments || '',
       amount: enquiry.amount || 0,
-      source: enquiry.source || 'chatbot'
+      source: enquiry.visitorId?.source || 'chatbot'
     }));
 
     return NextResponse.json({
@@ -125,9 +127,52 @@ export const GET = async (request: NextRequest) => {
     return await getExecutiveEnquiriesManagement(request, { userId: 'temp', username: 'admin', name: 'Admin', role: 'admin' });
   } catch (error) {
     console.error('Executive enquiries management API error:', error);
+    
+    // Use memory storage when MongoDB is not available
+    const memoryStorage = MemoryStorage.getInstance();
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const search = searchParams.get('search') || '';
+    
+    const filter: any = {};
+    if (search) {
+      filter.search = search;
+    }
+    
+    const { enquiries, count } = memoryStorage.getEnquiries(filter, page, limit);
+    
+    console.log('📊 Memory storage enquiries retrieved:', enquiries.length);
+    console.log('📊 Sample enquiry data:', enquiries[0] || 'No enquiries found');
+    
+    // Transform enquiries data for frontend
+    const transformedEnquiries = enquiries.map((enquiry: any) => ({
+      _id: enquiry._id.toString(),
+      name: enquiry.visitorId?.name || enquiry.visitorName || '',
+      email: enquiry.visitorId?.email || enquiry.email || '',
+      phone: enquiry.visitorId?.phone || enquiry.phoneNumber || '',
+      organization: enquiry.visitorId?.organization || '',
+      service: enquiry.visitorId?.service || 'General Inquiry',
+      enquiryType: enquiry.enquiryType || 'chatbot',
+      enquiryDetails: enquiry.enquiryDetails || '',
+      status: enquiry.status || 'new',
+      priority: enquiry.priority || 'medium',
+      createdAt: enquiry.createdAt,
+      lastInteractionAt: enquiry.visitorId?.lastInteractionAt || enquiry.createdAt,
+      isConverted: enquiry.visitorId?.isConverted || false,
+      customerExecutive: enquiry.customerExecutive || null,
+      salesExecutive: enquiry.salesExecutive || null,
+      assignedAgent: enquiry.assignedAgent || null,
+      comments: enquiry.comments || '',
+      amount: enquiry.amount || 0,
+      source: enquiry.visitorId?.source || 'chatbot'
+    }));
+    
     return NextResponse.json({
-      success: false,
-      message: 'Failed to load executive enquiries'
-    }, { status: 500 });
+      success: true,
+      enquiries: transformedEnquiries,
+      count: count,
+      message: 'Data from memory storage - MongoDB unavailable'
+    });
   }
 };

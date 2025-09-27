@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     // Check if sanjana user exists
     const sanjana = await User.findOne({ username: 'sanjana' });
-    console.log('Sanjana user:', sanjana ? 'EXISTS' : 'NOT FOUND');
+    console.log('Customer Executive user:', sanjana ? 'EXISTS' : 'NOT FOUND');
     
     // Create sanjana user if not exists
     if (!sanjana) {
@@ -22,13 +22,13 @@ export async function GET(request: NextRequest) {
         username: 'sanjana',
         email: 'sanjana@envirocare.com',
         password: hashedPassword,
-        name: 'Sanjana Pawar',
+        name: 'Customer Executive',
         role: 'executive',
         isApproved: true,
         isActive: true
       });
       await newUser.save();
-      console.log('✅ Created Sanjana user');
+      console.log('✅ Created Customer Executive user');
     }
     
     // Create shreyas user if not exists

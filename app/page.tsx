@@ -807,8 +807,8 @@ export default function Home() {
                       {visibleColumns['Sales Executive'] && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {(() => {
-                            // Don't show Sanjana as Sales Executive
-                            if (visitor.salesExecutiveName === 'Sanjana Pawar') {
+                            // Don't show Customer Executive as Sales Executive
+                            if (visitor.salesExecutiveName === 'Customer Executive') {
                               return 'N/A';
                             }
                             return visitor.salesExecutiveName || 'N/A';

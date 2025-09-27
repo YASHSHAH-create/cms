@@ -66,7 +66,7 @@ export const GET = async (request: NextRequest) => {
           _id: '507f1f77bcf86cd799439012',
           username: 'sanjana',
           email: 'sanjana@envirocarelabs.com',
-          name: 'Sanjana',
+          name: 'Customer Executive',
           role: 'customer-executive',
           department: 'Customer Service',
           region: 'North',

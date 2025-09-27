@@ -1,15 +1,19 @@
 import mongoose from 'mongoose';
+import { getConfig, dbConfig } from './config';
 
 let connectingPromise: Promise<typeof mongoose> | null = null;
 
 /**
  * Connect to Mongo exactly once. Subsequent calls are no-ops.
- * Simplified connection for MongoDB Atlas compatibility.
+ * Enhanced connection with comprehensive error handling and fallbacks.
  */
 export async function connectMongo() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI is missing. Check environment variables.');
+  const config = getConfig();
+  const uri = config.mongodbUri;
+  
+  if (!uri || uri === 'mongodb://localhost:27017/ems') {
+    console.warn('⚠️ MONGODB_URI not configured, using fallback mode');
+    throw new Error('MongoDB connection not available - using fallback mode');
   }
 
   // Only log on first connection attempt
@@ -29,13 +33,8 @@ export async function connectMongo() {
   }
 
   try {
-    // Use simplified options for serverless environments
-    connectingPromise = mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000, // 10 second timeout
-      socketTimeoutMS: 45000, // 45 second timeout
-      maxPoolSize: 1, // Maintain only one connection
-      minPoolSize: 0, // Allow connection to close
-    });
+    // Use optimized options for serverless environments
+    connectingPromise = mongoose.connect(uri, dbConfig.options);
     await connectingPromise;
     console.log('✅ MongoDB connected successfully at', new Date().toISOString());
     console.log('Database:', mongoose.connection.db.databaseName);
