@@ -3,6 +3,7 @@ import { connectMongo } from '@/lib/mongo';
 import Visitor from '@/lib/models/Visitor';
 import Enquiry from '@/lib/models/Enquiry';
 import MemoryStorage from '@/lib/memoryStorage';
+import { corsHeaders } from '@/lib/cors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -179,18 +180,32 @@ export async function POST(request: NextRequest) {
       amount: savedVisitor.amount || 0
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Enquiry added successfully',
       enquiry: enquiryResponse
     });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
 
   } catch (error) {
     console.error('❌ Add enquiry API error:', error);
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: false,
       message: 'Failed to add enquiry',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
   }
 }

@@ -174,12 +174,39 @@ export default function ExecutiveEnquiriesPage() {
       });
 
       if (response.ok) {
-        const newEnquiry = await response.json();
+        const responseData = await response.json();
+        console.log('📊 Add enquiry response:', responseData);
+        
+        // Map the API response to the frontend Enquiry type
+        const newEnquiry: Enquiry = {
+          _id: responseData.enquiry._id,
+          visitorName: responseData.enquiry.visitorName || 'Unknown',
+          phoneNumber: responseData.enquiry.phoneNumber || '',
+          email: responseData.enquiry.email || '',
+          enquiryType: responseData.enquiry.enquiryType || 'chatbot',
+          enquiryDetails: responseData.enquiry.enquiryDetails || 'General enquiry',
+          createdAt: responseData.enquiry.createdAt || new Date().toISOString(),
+          status: responseData.enquiry.status || 'new',
+          assignedAgent: responseData.enquiry.assignedAgent || 'Unassigned',
+          service: responseData.enquiry.service || 'General Inquiry',
+          subservice: responseData.enquiry.subservice || '',
+          organization: responseData.enquiry.organization || '',
+          region: responseData.enquiry.region || '',
+          salesExecutive: responseData.enquiry.salesExecutive || '',
+          comments: responseData.enquiry.comments || '',
+          amount: responseData.enquiry.amount || 0
+        };
+        
+        console.log('📊 Mapped enquiry:', newEnquiry);
         setEnquiries(prev => [newEnquiry, ...prev]);
         setShowAddForm(false);
         // Reset form
         const form = document.getElementById('addEnquiryForm') as HTMLFormElement;
         if (form) form.reset();
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Add enquiry failed:', errorData);
+        setError(errorData.message || 'Failed to add enquiry');
       }
     } catch (e) {
       console.error('Error adding enquiry:', e);
