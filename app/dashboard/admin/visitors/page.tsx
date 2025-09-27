@@ -890,6 +890,8 @@ export default function AdminVisitorsPage() {
     console.log('Initial form data:', initialFormData);
     console.log('Visitor region:', visitor.region);
     console.log('Visitor sales executive name:', visitor.salesExecutiveName);
+    console.log('Visitor agent name:', visitor.agentName);
+    console.log('Field separation check - SE:', visitor.salesExecutiveName, 'Agent:', visitor.agentName);
     
     setFormData(initialFormData);
     
@@ -1554,7 +1556,13 @@ export default function AdminVisitorsPage() {
                        {/* Sales Executive */}
                        {visibleColumns['Sales Executive'] && (
                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.salesExecutiveName || visitor.agentName || 'Unassigned'}
+                           {visitor.salesExecutiveName || 'Unassigned'}
+                           {/* Debug info - remove in production */}
+                           {process.env.NODE_ENV === 'development' && (
+                             <div className="text-xs text-gray-400 mt-1">
+                               Debug: SE={visitor.salesExecutiveName || 'null'}, Agent={visitor.agentName || 'null'}
+                             </div>
+                           )}
                          </td>
                        )}
                        
