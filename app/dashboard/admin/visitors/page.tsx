@@ -272,6 +272,12 @@ export default function AdminVisitorsPage() {
         // Show success notification
         console.log(`✅ Agent ${agentName} assigned to visitor ${visitorId}`);
         setError(null); // Clear any previous errors
+        
+        // Force refresh data from server to ensure consistency
+        setTimeout(() => {
+          console.log('🔄 Refreshing data after agent assignment...');
+          loadVisitors();
+        }, 1000);
       } else {
         let errorData = {};
         try {
@@ -1516,41 +1522,52 @@ export default function AdminVisitorsPage() {
                        {/* Agent */}
                        {visibleColumns['Agent'] && (
                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="relative">
-                          <select
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={visitor.assignedAgent || ''}
-                            onChange={(e) => {
-                              const selectedAgent = agents.find(agent => (agent._id || agent.id) === e.target.value);
-                              if (selectedAgent) {
-                                const agentId = selectedAgent._id || selectedAgent.id;
-                                const agentName = selectedAgent.name || selectedAgent.username;
-                                
-                                if (!agentId || !agentName) {
-                                  setError('Invalid agent data selected');
-                                  return;
-                                }
-                                
-                                assignAgentToVisitor(visitor._id, agentId, agentName);
-                              } else if (e.target.value === '') {
-                                // Handle unassigning
-                                assignAgentToVisitor(visitor._id, '', '');
-                              }
-                            }}
-                          >
-                            <option value="">Unassigned</option>
-                            {agents.length > 0 ? (
-                              agents.map(agent => (
-                                <option key={agent._id || agent.id} value={agent._id || agent.id}>
-                                  {agent.name || agent.username || 'Unknown Agent'}
-                                </option>
-                              ))
-                            ) : (
-                              <option value="" disabled>Loading agents...</option>
-                            )}
-                          </select>
-                        </div>
-                      </td>
+                           <div className="flex items-center space-x-2">
+                             {/* Display current agent name */}
+                             <span className="text-gray-900 font-medium min-w-0 flex-1">
+                               {visitor.agentName || 'Unassigned'}
+                             </span>
+                             {/* Assignment dropdown */}
+                             <select
+                               className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               value={visitor.assignedAgent || ''}
+                               onChange={(e) => {
+                                 const selectedAgent = agents.find(agent => (agent._id || agent.id) === e.target.value);
+                                 if (selectedAgent) {
+                                   const agentId = selectedAgent._id || selectedAgent.id;
+                                   const agentName = selectedAgent.name || selectedAgent.username;
+                                   
+                                   if (!agentId || !agentName) {
+                                     setError('Invalid agent data selected');
+                                     return;
+                                   }
+                                   
+                                   assignAgentToVisitor(visitor._id, agentId, agentName);
+                                 } else if (e.target.value === '') {
+                                   // Handle unassigning
+                                   assignAgentToVisitor(visitor._id, '', '');
+                                 }
+                               }}
+                             >
+                               <option value="">Unassigned</option>
+                               {agents.length > 0 ? (
+                                 agents.map(agent => (
+                                   <option key={agent._id || agent.id} value={agent._id || agent.id}>
+                                     {agent.name || agent.username || 'Unknown Agent'}
+                                   </option>
+                                 ))
+                               ) : (
+                                 <option value="" disabled>Loading agents...</option>
+                               )}
+                             </select>
+                           </div>
+                           {/* Debug info - remove in production */}
+                           {process.env.NODE_ENV === 'development' && (
+                             <div className="text-xs text-gray-400 mt-1">
+                               Debug: Agent={visitor.agentName || 'null'}, AssignedID={visitor.assignedAgent || 'null'}
+                             </div>
+                           )}
+                         </td>
                        )}
                        
                        {/* Sales Executive */}
