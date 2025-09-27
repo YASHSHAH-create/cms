@@ -24,7 +24,13 @@ export default function AdminAssignmentsPage() {
   const [user, setUser] = useState<any>(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null;
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  // API base URL - always use current domain
+  const API_BASE = (() => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  })();
 
   useEffect(() => {
     // Get user info from localStorage
