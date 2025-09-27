@@ -19,8 +19,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Use the fixed login endpoint that eliminates hardcoded data
-      const response = await fetch('/api/auth/fix-login', {
+      // Use the fully dynamic login endpoint - NO HARDCODED DATA
+      const response = await fetch('/api/auth/fully-dynamic-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -214,7 +214,7 @@ export default function ExecutiveVisitorsPage() {
         return;
       }
       
-      const agentsResponse = await fetch(`${API_BASE}/api/auth/agents`, { 
+      const agentsResponse = await fetch(`${API_BASE}/api/dynamic-agents`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       

@@ -201,7 +201,7 @@ export default function AdminDashboard() {
         console.log('🔍 Current authUser from useAuth:', authUser);
         console.log('🔍 Current token:', token ? 'Present' : 'Missing');
         
-        const response = await fetch('/api/auth/validate-session', {
+        const response = await fetch('/api/auth/dynamic-validate-session', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

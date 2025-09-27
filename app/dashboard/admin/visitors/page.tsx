@@ -180,8 +180,8 @@ export default function AdminVisitorsPage() {
       };
       
       const [agentsResponse, salesExecutivesResponse] = await Promise.all([
-        fetch(`${API_BASE}/api/auth/agents`, { headers }),
-        fetch(`${API_BASE}/api/auth/sales-executives`, { headers })
+        fetch(`${API_BASE}/api/dynamic-agents`, { headers }),
+        fetch(`${API_BASE}/api/dynamic-sales-executives`, { headers })
       ]);
       
       if (agentsResponse.ok) {
