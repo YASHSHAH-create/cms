@@ -132,18 +132,7 @@ export default function ExecutiveEnquiriesPage() {
     ]
   };
 
-  const agentOptions = [
-    'Dr. Sarah Johnson - Senior Environmental Consultant',
-    'Mr. Michael Chen - Waste Management Specialist',
-    'Dr. Emily Rodriguez - Air Quality Expert',
-    'Mr. David Kumar - Water Testing Specialist',
-    'Dr. Lisa Wang - Food Safety Consultant',
-    'Mr. James Wilson - Soil Testing Expert',
-    'Dr. Maria Garcia - Sustainability Advisor',
-    'Mr. Robert Brown - Noise Monitoring Specialist',
-    'Dr. Jennifer Lee - Environmental Impact Assessor',
-    'Unassigned'
-  ];
+  const [agentOptions, setAgentOptions] = useState<string[]>(['Unassigned']);
 
   const regionOptions = [
     'North India',
@@ -165,6 +154,25 @@ export default function ExecutiveEnquiriesPage() {
     }
     return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
   })();
+
+  const loadAgents = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/agents`);
+      if (response.ok) {
+        const data = await response.json();
+        const agents = data.agents || [];
+        const agentNames = ['Unassigned', ...agents.map((agent: any) => agent.displayName)];
+        setAgentOptions(agentNames);
+        console.log('📊 Loaded real agents:', agentNames);
+      } else {
+        console.error('Failed to load agents, using fallback');
+        setAgentOptions(['Unassigned', 'Sanjana (Customer Executive)']);
+      }
+    } catch (error) {
+      console.error('Error loading agents:', error);
+      setAgentOptions(['Unassigned', 'Sanjana (Customer Executive)']);
+    }
+  };
 
   const loadEnquiries = async () => {
     if (!token) {
@@ -267,6 +275,7 @@ export default function ExecutiveEnquiriesPage() {
       }
     }
 
+    loadAgents();
     loadEnquiries();
   }, [API_BASE, token]);
 
