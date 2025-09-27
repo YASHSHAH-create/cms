@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { connectMongo } from '@/lib/mongo';
 import Visitor from '@/lib/models/Visitor';
+import Enquiry from '@/lib/models/Enquiry';
 import { createAuthenticatedHandler, requireAdminOrExecutive } from '@/lib/middleware/auth';
 import MemoryStorage from '@/lib/memoryStorage';
+import { corsHeaders } from '@/lib/cors';
 
 async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) {
   try {
@@ -100,7 +102,7 @@ async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) 
       source: enquiry.visitorId?.source || 'chatbot'
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       enquiries: transformedEnquiries,
       pagination: {
@@ -110,14 +112,28 @@ async function getExecutiveEnquiriesManagement(request: NextRequest, user: any) 
         pages: Math.ceil(totalCount / limitNum)
       }
     });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
 
   } catch (error) {
     console.error('❌ Executive enquiries management API error:', error);
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: false,
       message: 'Failed to load executive enquiries',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
   }
 }
 
@@ -168,11 +184,18 @@ export const GET = async (request: NextRequest) => {
       source: enquiry.visitorId?.source || 'chatbot'
     }));
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       enquiries: transformedEnquiries,
       count: count,
       message: 'Data from memory storage - MongoDB unavailable'
     });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
   }
 };
