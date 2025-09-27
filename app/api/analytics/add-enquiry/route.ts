@@ -142,15 +142,5 @@ async function addEnquiry(request: NextRequest, user: any) {
   }
 }
 
-// Temporarily disable authentication for testing
-export const POST = async (request: NextRequest) => {
-  try {
-    return await addEnquiry(request, { userId: 'temp', username: 'admin', name: 'Admin', role: 'admin' });
-  } catch (error) {
-    console.error('Add enquiry API error:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to add enquiry'
-    }, { status: 500 });
-  }
-};
+// Use authenticated handler
+export const POST = createAuthenticatedHandler(requireAdminOrExecutive(addEnquiry));

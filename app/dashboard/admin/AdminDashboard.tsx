@@ -2,13 +2,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
 import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import StatBox from '@/components/StatBox';
+import RoleBasedStatBox from '@/components/RoleBasedStatBox';
+import { getRolePermissions, getDashboardTitle, getDashboardDescription } from '@/lib/utils/roleBasedAccess';
+import { useRealtimeSync } from '@/lib/utils/realtimeSync';
 import DailyVisitorsChart from '@/components/DailyVisitorsChart';
 import ConversionRateChart from '@/components/ConversationRatioChart';
 import DailyAnalysisTable from '@/components/DailyAnalysisTable';
 import RecentConversations from '@/components/RecentConversations';
+import EnquiryForm from '@/components/EnquiryForm';
 // Chart components imported but not used in this component
 import {
   Chart as ChartJS,
@@ -72,6 +77,8 @@ type RecentConversationData = {
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { token, user: authUser, isAuthenticated } = useAuth();
+  const { subscribe, refreshAll } = useRealtimeSync();
   const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
   const [dailyVisitorsData, setDailyVisitorsData] = useState<DailyVisitorsData | null>(null);
   const [conversationRatioData, setConversationRatioData] = useState<ConversationRatioData | null>(null);
@@ -79,9 +86,11 @@ export default function AdminDashboard() {
   const [recentConversationsData, setRecentConversationsData] = useState<RecentConversationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showEnquiryForm, setShowEnquiryForm] = useState(false);
 
-  const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+  const permissions = user ? getRolePermissions(user) : null;
 
   // Fallback data when API is not available
   const fallbackData = {
@@ -165,47 +174,53 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    // Get user info from localStorage
-    const userStr = localStorage.getItem('ems_user');
-    const token = localStorage.getItem('ems_token');
-    
-    console.log('🔍 AdminDashboard: Loading user data...', { 
-      userStr: userStr ? 'Found' : 'Not found',
-      token: token ? 'Found' : 'Not found'
-    });
-    
-    if (userStr && token) {
-      try {
-        const userData = JSON.parse(userStr);
-        console.log('👤 AdminDashboard: User data loaded:', { 
-          name: userData.name, 
-          role: userData.role,
-          id: userData.id || userData._id
-        });
-        setUser(userData);
-        
-        // Check if user has admin role, if not redirect to appropriate dashboard
-        if (userData.role !== 'admin') {
-          console.warn(`❌ AdminDashboard: User not authorized to view this dashboard`, { userRole: userData.role });
-          if (userData.role === 'executive' || userData.role === 'sales-executive' || userData.role === 'customer-executive') {
-            router.push('/dashboard/executive');
-          } else {
-            router.push('/login');
-          }
-          return;
-        }
-        
-        console.log('✅ AdminDashboard: User role validated, proceeding to load data...');
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        router.push('/login');
-        return;
-      }
-    } else {
-      console.log('❌ AdminDashboard: No user data or token found, redirecting to login');
+    // Check authentication using useAuth hook
+    if (!isAuthenticated || !authUser || !token) {
+      console.log('❌ AdminDashboard: Not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
+    
+    console.log('👤 AdminDashboard: User data loaded:', { 
+      name: authUser.name, 
+      role: authUser.role,
+      id: authUser.id
+    });
+    
+    // Check if user has admin role
+    if (authUser.role !== 'admin') {
+      console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: authUser.role });
+      // Redirect to appropriate dashboard based on role
+      switch (authUser.role) {
+        case 'sales-executive':
+          router.push('/dashboard/executive');
+          break;
+        case 'customer-executive':
+          router.push('/dashboard/customer-executive');
+          break;
+        default:
+          router.push('/dashboard/executive');
+      }
+      return;
+    }
+    
+    setUser(authUser);
+    console.log('✅ AdminDashboard: Admin role validated, proceeding to load data...');
+
+    // Subscribe to real-time updates
+    const unsubscribeEnquiry = subscribe('enquiry_added', () => {
+      console.log('📝 New enquiry added, refreshing dashboard data...');
+      setRefreshKey(prev => prev + 1);
+    });
+
+    const unsubscribeVisitor = subscribe('visitor_added', () => {
+      console.log('👥 New visitor added, refreshing dashboard data...');
+      setRefreshKey(prev => prev + 1);
+    });
+
+    // Listen for manual refresh events
+    const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    window.addEventListener('dashboard_refresh', handleRefresh);
 
     const loadData = async () => {
       if (!token) {
@@ -296,7 +311,14 @@ export default function AdminDashboard() {
     };
 
     loadData();
-  }, [API_BASE, token, router]);
+
+    // Cleanup function
+    return () => {
+      unsubscribeEnquiry();
+      unsubscribeVisitor();
+      window.removeEventListener('dashboard_refresh', handleRefresh);
+    };
+  }, [API_BASE, token, router, isAuthenticated, authUser, subscribe, refreshKey]);
 
   // Calculate statistics from real data
   const totalVisitors = conversationRatioData?.visitors || 0;
@@ -331,45 +353,20 @@ export default function AdminDashboard() {
           
           {!loading && (
             <>
-              {/* Stat Boxes - First Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div className="h-full">
-                  <StatBox
-                    title="Total Visitors"
-                    value={totalVisitors}
-                    icon="👥"
-                    color="blue"
-                    change={{ value: 8, isPositive: true }}
-                  />
-                </div>
-                <div className="h-full">
-                  <StatBox
-                    title="Leads Acquired"
-                    value={leadsAcquired}
-                    icon="🎯"
-                    color="green"
-                    change={{ value: 12, isPositive: true }}
-                  />
-                </div>
-                <div className="h-full">
-                  <StatBox
-                    title="Chatbot Enquiries"
-                    value={chatbotEnquiries}
-                    icon="🤖"
-                    color="orange"
-                    change={{ value: 6, isPositive: true }}
-                  />
-                </div>
-                <div className="h-full">
-                  <StatBox
-                    title="Pending Conversations"
-                    value={pendingConversations}
-                    icon="⏳"
-                    color="red"
-                    change={{ value: 3, isPositive: false }}
-                  />
-                </div>
-              </div>
+              {/* Role-Based Stat Boxes */}
+              {user && (
+                <RoleBasedStatBox
+                  user={user}
+                  data={{
+                    totalVisitors,
+                    totalEnquiries: Math.round(totalVisitors * 0.4),
+                    totalMessages: chatbotEnquiries,
+                    leadsConverted: leadsAcquired,
+                    pendingApprovals: user.role === 'admin' ? 3 : undefined,
+                    activeAgents: user.role === 'admin' ? 8 : undefined,
+                  }}
+                />
+              )}
 
               {/* Charts - Second Row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -395,6 +392,28 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowEnquiryForm(true)}
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors z-40"
+        title="Add New Enquiry"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </button>
+
+      {/* Enquiry Form Modal */}
+      {showEnquiryForm && (
+        <EnquiryForm
+          onClose={() => setShowEnquiryForm(false)}
+          onSuccess={() => {
+            console.log('✅ Enquiry added successfully, refreshing dashboard...');
+            setRefreshKey(prev => prev + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
