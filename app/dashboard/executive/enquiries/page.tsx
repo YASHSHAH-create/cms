@@ -28,6 +28,11 @@ type EnquiryFormData = {
   email: string;
   enquiryType: 'chatbot' | 'email' | 'calls' | 'website';
   enquiryDetails: string;
+  service: string;
+  subservice: string;
+  organization: string;
+  region: string;
+  assignedAgent: string;
 };
 
 export default function ExecutiveEnquiriesPage() {
@@ -39,6 +44,117 @@ export default function ExecutiveEnquiriesPage() {
   const [editingEnquiry, setEditingEnquiry] = useState<Enquiry | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'chatbot' | 'email' | 'calls' | 'website'>('all');
+
+  // Service and subservice options
+  const serviceOptions = [
+    'Environmental Consulting',
+    'Waste Management',
+    'Air Quality Monitoring',
+    'Water Testing',
+    'Food Testing',
+    'Soil Testing',
+    'Noise Monitoring',
+    'Sustainability Consulting',
+    'Environmental Impact Assessment',
+    'General Inquiry'
+  ];
+
+  const subserviceOptions = {
+    'Environmental Consulting': [
+      'Environmental Impact Assessment',
+      'Compliance Auditing',
+      'Sustainability Planning',
+      'Green Building Certification',
+      'Environmental Risk Assessment'
+    ],
+    'Waste Management': [
+      'Recycling Programs',
+      'Waste Reduction Strategies',
+      'Hazardous Waste Disposal',
+      'Composting Solutions',
+      'Waste Audit Services'
+    ],
+    'Air Quality Monitoring': [
+      'Indoor Air Quality Testing',
+      'Outdoor Air Quality Monitoring',
+      'Industrial Emissions Testing',
+      'Vehicle Emissions Testing',
+      'Air Purification Systems'
+    ],
+    'Water Testing': [
+      'Drinking Water Testing',
+      'Wastewater Analysis',
+      'Swimming Pool Testing',
+      'Industrial Water Testing',
+      'Groundwater Monitoring'
+    ],
+    'Food Testing': [
+      'Microbiological Testing',
+      'Chemical Contaminant Testing',
+      'Nutritional Analysis',
+      'Pesticide Residue Testing',
+      'Food Safety Certification'
+    ],
+    'Soil Testing': [
+      'Agricultural Soil Testing',
+      'Contaminated Site Assessment',
+      'Soil Fertility Analysis',
+      'Heavy Metal Testing',
+      'Soil Remediation Planning'
+    ],
+    'Noise Monitoring': [
+      'Industrial Noise Assessment',
+      'Traffic Noise Analysis',
+      'Construction Noise Monitoring',
+      'Residential Noise Testing',
+      'Noise Control Solutions'
+    ],
+    'Sustainability Consulting': [
+      'Carbon Footprint Analysis',
+      'Energy Efficiency Audits',
+      'Renewable Energy Planning',
+      'Sustainable Business Practices',
+      'Green Certification Support'
+    ],
+    'Environmental Impact Assessment': [
+      'Project Impact Analysis',
+      'Regulatory Compliance',
+      'Stakeholder Consultation',
+      'Mitigation Planning',
+      'Monitoring Programs'
+    ],
+    'General Inquiry': [
+      'Information Request',
+      'Service Inquiry',
+      'Pricing Inquiry',
+      'Consultation Request',
+      'Other'
+    ]
+  };
+
+  const agentOptions = [
+    'Dr. Sarah Johnson - Senior Environmental Consultant',
+    'Mr. Michael Chen - Waste Management Specialist',
+    'Dr. Emily Rodriguez - Air Quality Expert',
+    'Mr. David Kumar - Water Testing Specialist',
+    'Dr. Lisa Wang - Food Safety Consultant',
+    'Mr. James Wilson - Soil Testing Expert',
+    'Dr. Maria Garcia - Sustainability Advisor',
+    'Mr. Robert Brown - Noise Monitoring Specialist',
+    'Dr. Jennifer Lee - Environmental Impact Assessor',
+    'Unassigned'
+  ];
+
+  const regionOptions = [
+    'North India',
+    'South India',
+    'East India',
+    'West India',
+    'Central India',
+    'Northeast India',
+    'International',
+    'Not Specified'
+  ];
 
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
   
@@ -153,6 +269,24 @@ export default function ExecutiveEnquiriesPage() {
 
     loadEnquiries();
   }, [API_BASE, token]);
+
+  // Handle service change to update subservice options
+  const handleServiceChange = (service: string) => {
+    const subserviceSelect = document.querySelector('select[name="subservice"]') as HTMLSelectElement;
+    if (subserviceSelect) {
+      // Clear existing options
+      subserviceSelect.innerHTML = '<option value="">Select subservice</option>';
+      
+      // Add new options based on selected service
+      const subservices = subserviceOptions[service as keyof typeof subserviceOptions] || [];
+      subservices.forEach(subservice => {
+        const option = document.createElement('option');
+        option.value = subservice;
+        option.textContent = subservice;
+        subserviceSelect.appendChild(option);
+      });
+    }
+  };
 
   const addEnquiry = async (formData: EnquiryFormData) => {
     if (!token) {
@@ -511,6 +645,66 @@ export default function ExecutiveEnquiriesPage() {
                       <option value="website">Website</option>
                     </select>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Service *</label>
+                    <select
+                      name="service"
+                      required
+                      onChange={(e) => handleServiceChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    >
+                      <option value="">Select service</option>
+                      {serviceOptions.map((service) => (
+                        <option key={service} value={service}>{service}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Subservice</label>
+                    <select
+                      name="subservice"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    >
+                      <option value="">Select subservice</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Organization</label>
+                    <input
+                      type="text"
+                      name="organization"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                      placeholder="Company/Organization name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Region</label>
+                    <select
+                      name="region"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    >
+                      <option value="">Select region</option>
+                      {regionOptions.map((region) => (
+                        <option key={region} value={region}>{region}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Assigned Agent</label>
+                  <select
+                    name="assignedAgent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  >
+                    <option value="">Select agent</option>
+                    {agentOptions.map((agent) => (
+                      <option key={agent} value={agent}>{agent}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Enquiry Details *</label>

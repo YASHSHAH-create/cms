@@ -17,7 +17,12 @@ export async function POST(request: NextRequest) {
       phoneNumber,
       email,
       enquiryType,
-      enquiryDetails
+      enquiryDetails,
+      service,
+      subservice,
+      organization,
+      region,
+      assignedAgent
     } = body;
 
     // Validate required fields
@@ -59,18 +64,20 @@ export async function POST(request: NextRequest) {
           name: visitorName,
           email: email?.trim() || '',
           phone: phoneNumber?.trim() || '',
-          organization: '',
-          service: 'General Inquiry',
-          subservice: '',
+          organization: organization || '',
+          service: service || 'General Inquiry',
+          subservice: subservice || '',
           source: enquiryType || 'chatbot',
-          location: '',
+          location: region || '',
           meta: {},
           lastInteractionAt: new Date(),
           isConverted: false,
           status: 'enquiry_required',
           leadScore: 0,
           priority: 'medium',
-          pipelineHistory: []
+          pipelineHistory: [],
+          agentName: assignedAgent || '',
+          salesExecutiveName: ''
         };
         
         visitor = new Visitor(visitorData);
@@ -93,9 +100,13 @@ export async function POST(request: NextRequest) {
         enquiryDetails: enquiryDetails,
         status: 'new',
         priority: 'medium',
-        assignedAgent: null,
+        assignedAgent: assignedAgent || null,
         comments: '',
-        amount: 0
+        amount: 0,
+        service: service || 'General Inquiry',
+        subservice: subservice || '',
+        organization: organization || '',
+        region: region || ''
       };
 
       const enquiry = new Enquiry(enquiryData);
@@ -136,11 +147,11 @@ export async function POST(request: NextRequest) {
         enquiryDetails: enquiryDetails,
         source: enquiryType || 'chatbot',
         status: 'new',
-        service: 'General Inquiry',
-        subservice: '',
-        organization: '',
-        region: '',
-        agentName: '',
+        service: service || 'General Inquiry',
+        subservice: subservice || '',
+        organization: organization || '',
+        region: region || '',
+        agentName: assignedAgent || '',
         salesExecutiveName: '',
         comments: '',
         amount: 0,
