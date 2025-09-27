@@ -23,7 +23,7 @@ export function getConfig(): AppConfig {
     if (typeof window !== 'undefined') {
       apiBase = window.location.origin;
     } else {
-      apiBase = isNetlify ? 'https://your-app.netlify.app' : 'http://localhost:3000';
+      apiBase = isNetlify ? 'https://newems.netlify.app' : 'http://localhost:3000';
     }
   }
 

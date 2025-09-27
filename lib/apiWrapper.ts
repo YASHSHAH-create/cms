@@ -156,7 +156,14 @@ export class ApiWrapper {
 }
 
 // Create default API wrapper instance
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+const API_BASE = (() => {
+  // Always use current domain in browser
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  // Fallback for server-side
+  return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+})();
 export const apiWrapper = new ApiWrapper(API_BASE);
 
 // Enhanced API functions with fallbacks
