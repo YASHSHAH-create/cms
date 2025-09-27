@@ -19,7 +19,16 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const data = await api.auth.login({ username, password });
+      // Use the fixed login endpoint that eliminates hardcoded data
+      const response = await fetch('/api/auth/fix-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      const data = await response.json();
 
       if (data.success) {
         // Store token and user data
