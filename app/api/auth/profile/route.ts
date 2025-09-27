@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
           _id: '507f1f77bcf86cd799439012',
           username: 'sanjana',
           email: 'sanjana@envirocarelabs.com',
-          name: 'Customer Executive',
+          name: 'Sanjana Pawar',
           role: 'customer-executive',
           department: 'Customer Service',
           region: 'North',

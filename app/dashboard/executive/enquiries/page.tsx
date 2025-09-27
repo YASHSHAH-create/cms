@@ -166,11 +166,11 @@ export default function ExecutiveEnquiriesPage() {
         console.log('📊 Loaded real agents:', agentNames);
       } else {
         console.error('Failed to load agents, using fallback');
-        setAgentOptions(['Unassigned', 'Sanjana (Customer Executive)']);
+        setAgentOptions(['Unassigned', 'Sanjana Pawar (Customer Executive)']);
       }
     } catch (error) {
       console.error('Error loading agents:', error);
-      setAgentOptions(['Unassigned', 'Sanjana (Customer Executive)']);
+      setAgentOptions(['Unassigned', 'Sanjana Pawar (Customer Executive)']);
     }
   };
 

@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
     const fallbackAgents = [
       {
         _id: 'fallback_1',
-        name: 'Sanjana',
+        name: 'Sanjana Pawar',
         username: 'sanjana',
         email: 'sanjana@envirocarelabs.com',
         role: 'customer-executive',
-        displayName: 'Sanjana (Customer Executive)'
+        displayName: 'Sanjana Pawar (Customer Executive)'
       }
     ];
 

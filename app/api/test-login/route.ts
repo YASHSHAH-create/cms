@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         username: 'sanjana',
         email: 'sanjana@envirocare.com',
         password: hashedPassword,
-        name: 'Customer Executive',
+        name: 'Sanjana Pawar',
         role: 'executive',
         isApproved: true,
         isActive: true

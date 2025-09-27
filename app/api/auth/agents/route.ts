@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
       {
         _id: 'sanjana_1',
         id: 'sanjana_1',
-        name: 'Sanjana',
+        name: 'Sanjana Pawar',
         username: 'sanjana',
         email: 'sanjana@envirocarelabs.com',
         role: 'customer-executive',
-        displayName: 'Sanjana (Customer Executive)'
+        displayName: 'Sanjana Pawar (Customer Executive)'
       }
     ];
 
