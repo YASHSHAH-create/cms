@@ -226,7 +226,8 @@ export const GET = async (request: NextRequest) => {
         isConverted: enquiry.visitorId?.isConverted || false,
         customerExecutive: enquiry.customerExecutive || null,
         salesExecutive: enquiry.salesExecutive || null,
-        assignedAgent: enquiry.assignedAgent || null,
+        assignedAgent: enquiry.assignedAgent || enquiry.agentName || null,
+        agentName: enquiry.agentName || enquiry.assignedAgent || null,
         comments: enquiry.comments || '',
         amount: enquiry.amount || 0,
         source: enquiry.visitorId?.source || 'chatbot'
@@ -287,7 +288,8 @@ export const GET = async (request: NextRequest) => {
         isConverted: enquiry.visitorId?.isConverted || false,
         customerExecutive: enquiry.customerExecutive || null,
         salesExecutive: enquiry.salesExecutive || null,
-        assignedAgent: enquiry.assignedAgent || null,
+        assignedAgent: enquiry.assignedAgent || enquiry.agentName || null,
+        agentName: enquiry.agentName || enquiry.assignedAgent || null,
         comments: enquiry.comments || '',
         amount: enquiry.amount || 0,
         source: enquiry.visitorId?.source || 'chatbot'

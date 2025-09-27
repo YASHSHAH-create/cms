@@ -43,46 +43,42 @@ async function assignAgent(request: NextRequest, user: any) {
     // Clean up the agent assignment data
     const cleanedAgentId = agentId && agentId !== '' ? agentId : null;
     
-    // Update the visitor with agent assignment using the correct model
-    const updatedVisitor = isNewModel 
-      ? await Visitor.findByIdAndUpdate(
-          visitorId,
-          {
-            assignedAgent: cleanedAgentId,
-            agentName: agentName || 'Unknown Agent',
-            agent: agentName || 'Unknown Agent',
-            lastModifiedBy: user.username || 'admin',
-            lastModifiedAt: new Date(),
-            $push: {
-              assignmentHistory: {
-                assignedBy: user.username || 'admin',
-                assignedTo: agentName || 'Unknown Agent',
-                assignedAt: new Date(),
-                reason: 'Manual assignment'
-              }
-            }
-          },
-          { new: true, runValidators: true }
-        )
-      : await Visitor.findByIdAndUpdate(
-          visitorId,
-          {
-            assignedAgent: cleanedAgentId,
-            agentName: agentName || 'Unknown Agent',
-            agent: agentName || 'Unknown Agent',
-            lastModifiedBy: user.username || 'admin',
-            lastModifiedAt: new Date(),
-            $push: {
-              assignmentHistory: {
-                assignedBy: user.username || 'admin',
-                assignedTo: agentName || 'Unknown Agent',
-                assignedAt: new Date(),
-                reason: 'Manual assignment'
-              }
-            }
-          },
-          { new: true, runValidators: true }
-        );
+    // Update the visitor with agent assignment
+    const updatedVisitor = await Visitor.findByIdAndUpdate(
+      visitorId,
+      {
+        assignedAgent: cleanedAgentId,
+        agentName: agentName || 'Unknown Agent',
+        agent: agentName || 'Unknown Agent',
+        lastModifiedBy: user.username || 'admin',
+        lastModifiedAt: new Date(),
+        $push: {
+          assignmentHistory: {
+            assignedBy: user.username || 'admin',
+            assignedTo: agentName || 'Unknown Agent',
+            assignedAt: new Date(),
+            reason: 'Manual assignment'
+          }
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    // CRITICAL: Also update the Enquiry collection for data synchronization
+    console.log('🔄 Synchronizing agent assignment with Enquiry collection...');
+    const updatedEnquiries = await Enquiry.updateMany(
+      { visitorId: visitorId },
+      {
+        $set: {
+          assignedAgent: cleanedAgentId,
+          agentName: agentName || 'Unknown Agent',
+          lastModifiedBy: user.username || 'admin',
+          lastModifiedAt: new Date()
+        }
+      }
+    );
+    
+    console.log(`✅ Updated ${updatedEnquiries.modifiedCount} enquiries with agent assignment`);
 
     console.log('✅ Agent assigned successfully:', updatedVisitor._id);
 
