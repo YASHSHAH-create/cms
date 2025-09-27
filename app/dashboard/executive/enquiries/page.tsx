@@ -619,8 +619,7 @@ export default function ExecutiveEnquiriesPage() {
                        </td>
                        <td className="px-6 py-4">
                          <div className="text-sm text-gray-900 max-w-xs">
-                           <div className="font-medium">{enquiry.service || 'General Inquiry'}</div>
-                           <div className="text-gray-600 truncate">{enquiry.enquiryDetails || 'N/A'}</div>
+                           <div className="text-gray-600">{enquiry.enquiryDetails || 'No details provided'}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
