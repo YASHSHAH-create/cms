@@ -41,7 +41,19 @@ async function assignAgent(request: NextRequest, user: any) {
     }
 
     // Clean up the agent assignment data
-    const cleanedAgentId = agentId && agentId !== '' ? agentId : null;
+    // Handle both ObjectId and string IDs properly
+    let cleanedAgentId = null;
+    if (agentId && agentId !== '') {
+      // If it's a string ID (like "sanjana_1"), store it in agentName instead
+      if (typeof agentId === 'string' && !agentId.match(/^[0-9a-fA-F]{24}$/)) {
+        // This is a string ID, not a valid ObjectId
+        cleanedAgentId = null; // Don't store in assignedAgent field
+        console.log('⚠️ String ID detected, storing in agentName instead:', agentId);
+      } else {
+        // This is a valid ObjectId
+        cleanedAgentId = agentId;
+      }
+    }
     
     // Update the visitor with agent assignment
     const updatedVisitor = await Visitor.findByIdAndUpdate(
@@ -70,8 +82,8 @@ async function assignAgent(request: NextRequest, user: any) {
       { visitorId: visitorId },
       {
         $set: {
-          assignedAgent: cleanedAgentId,
-          agentName: agentName || 'Unknown Agent',
+          assignedAgent: cleanedAgentId, // Only set if it's a valid ObjectId
+          agentName: agentName || 'Unknown Agent', // Always store agent name
           lastModifiedBy: user.username || 'admin',
           lastModifiedAt: new Date()
         }

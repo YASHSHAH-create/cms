@@ -9,6 +9,7 @@ export interface IEnquiry extends Document {
   status: 'new' | 'in_progress' | 'resolved' | 'closed' | 'escalated';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignedAgent?: mongoose.Types.ObjectId;
+  agentName?: string;
   visitorId?: mongoose.Types.ObjectId;
   organization?: string;
   location?: string;
@@ -84,6 +85,10 @@ const enquirySchema = new Schema<IEnquiry>({
   assignedAgent: {
     type: Schema.Types.ObjectId,
     ref: 'User'
+  },
+  agentName: {
+    type: String,
+    trim: true
   },
   visitorId: {
     type: Schema.Types.ObjectId,
