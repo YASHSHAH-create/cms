@@ -197,6 +197,10 @@ export default function AdminDashboard() {
     // Validate user session with server to ensure correct user data
     const validateUserSession = async () => {
       try {
+        console.log('🔍 AdminDashboard: Starting user session validation...');
+        console.log('🔍 Current authUser from useAuth:', authUser);
+        console.log('🔍 Current token:', token ? 'Present' : 'Missing');
+        
         const response = await fetch('/api/auth/validate-session', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -206,29 +210,27 @@ export default function AdminDashboard() {
 
         if (response.ok) {
           const result = await response.json();
+          console.log('🔍 Server validation response:', result);
+          
           if (result.success) {
             const validatedUser = result.user;
             console.log('✅ AdminDashboard: Session validated with server:', validatedUser);
             
-            // Update localStorage with validated data
-            localStorage.setItem('ems_user', JSON.stringify(validatedUser));
-            
-            // Check if user has admin role
+            // CRITICAL: Check if this is actually an admin user
             if (validatedUser.role !== 'admin') {
-              console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: validatedUser.role });
-              // Redirect to appropriate dashboard based on role
-              switch (validatedUser.role) {
-                case 'sales-executive':
-                  router.push('/dashboard/executive');
-                  break;
-                case 'customer-executive':
-                  router.push('/dashboard/customer-executive');
-                  break;
-                default:
-                  router.push('/dashboard/executive');
-              }
+              console.error('❌ CRITICAL: Server returned non-admin user for admin dashboard!', validatedUser);
+              console.error('❌ This explains why you see Sanjana\'s name instead of admin!');
+              
+              // Clear all cached data and redirect to login
+              localStorage.clear();
+              sessionStorage.clear();
+              alert('Authentication error detected. Please login again as admin.');
+              router.push('/login');
               return;
             }
+            
+            // Update localStorage with validated data
+            localStorage.setItem('ems_user', JSON.stringify(validatedUser));
             
             setUser(validatedUser);
             console.log('✅ AdminDashboard: Admin role validated, proceeding to load data...');
@@ -244,23 +246,18 @@ export default function AdminDashboard() {
         }
       } catch (error) {
         console.error('❌ AdminDashboard: Session validation error:', error);
-        // Fallback to localStorage data if server is unavailable
         console.log('⚠️ AdminDashboard: Using localStorage data as fallback');
         
-        // Check if user has admin role
+        // CRITICAL: Check if localStorage has correct admin data
         if (authUser.role !== 'admin') {
-          console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: authUser.role });
-          // Redirect to appropriate dashboard based on role
-          switch (authUser.role) {
-            case 'sales-executive':
-              router.push('/dashboard/executive');
-              break;
-            case 'customer-executive':
-              router.push('/dashboard/customer-executive');
-              break;
-            default:
-              router.push('/dashboard/executive');
-          }
+          console.error('❌ CRITICAL: localStorage contains non-admin user for admin dashboard!', authUser);
+          console.error('❌ This explains why you see Sanjana\'s name instead of admin!');
+          
+          // Clear all cached data and redirect to login
+          localStorage.clear();
+          sessionStorage.clear();
+          alert('Authentication error detected. Please login again as admin.');
+          router.push('/login');
           return;
         }
         
