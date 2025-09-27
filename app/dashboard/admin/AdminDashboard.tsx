@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
+import AuthGuard from '@/components/AuthGuard';
 import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import StatBox from '@/components/StatBox';
@@ -338,11 +339,12 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar userRole={user.role} userName={user.name} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-0 ml-0">
-        <DashboardHeader userRole={user.role} userName={user.name} />
+    <AuthGuard requiredRole="admin">
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar userRole={user.role} userName={user.name} />
+        
+        <div className="flex-1 flex flex-col overflow-hidden md:ml-0 ml-0">
+          <DashboardHeader userRole={user.role} userName={user.name} />
         
       <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
           {loading && (
@@ -420,6 +422,7 @@ export default function AdminDashboard() {
           }}
         />
       )}
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
