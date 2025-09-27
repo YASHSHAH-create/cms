@@ -194,25 +194,82 @@ export default function AdminDashboard() {
       id: authUser.id
     });
     
-    // Check if user has admin role
-    if (authUser.role !== 'admin') {
-      console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: authUser.role });
-      // Redirect to appropriate dashboard based on role
-      switch (authUser.role) {
-        case 'sales-executive':
-          router.push('/dashboard/executive');
-          break;
-        case 'customer-executive':
-          router.push('/dashboard/customer-executive');
-          break;
-        default:
-          router.push('/dashboard/executive');
+    // Validate user session with server to ensure correct user data
+    const validateUserSession = async () => {
+      try {
+        const response = await fetch('/api/auth/validate-session', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            const validatedUser = result.user;
+            console.log('✅ AdminDashboard: Session validated with server:', validatedUser);
+            
+            // Update localStorage with validated data
+            localStorage.setItem('ems_user', JSON.stringify(validatedUser));
+            
+            // Check if user has admin role
+            if (validatedUser.role !== 'admin') {
+              console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: validatedUser.role });
+              // Redirect to appropriate dashboard based on role
+              switch (validatedUser.role) {
+                case 'sales-executive':
+                  router.push('/dashboard/executive');
+                  break;
+                case 'customer-executive':
+                  router.push('/dashboard/customer-executive');
+                  break;
+                default:
+                  router.push('/dashboard/executive');
+              }
+              return;
+            }
+            
+            setUser(validatedUser);
+            console.log('✅ AdminDashboard: Admin role validated, proceeding to load data...');
+          } else {
+            console.log('❌ AdminDashboard: Session validation failed:', result.message);
+            localStorage.clear();
+            router.push('/login');
+          }
+        } else {
+          console.log('❌ AdminDashboard: Session validation request failed');
+          localStorage.clear();
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('❌ AdminDashboard: Session validation error:', error);
+        // Fallback to localStorage data if server is unavailable
+        console.log('⚠️ AdminDashboard: Using localStorage data as fallback');
+        
+        // Check if user has admin role
+        if (authUser.role !== 'admin') {
+          console.warn(`❌ AdminDashboard: User not authorized to view admin dashboard`, { userRole: authUser.role });
+          // Redirect to appropriate dashboard based on role
+          switch (authUser.role) {
+            case 'sales-executive':
+              router.push('/dashboard/executive');
+              break;
+            case 'customer-executive':
+              router.push('/dashboard/customer-executive');
+              break;
+            default:
+              router.push('/dashboard/executive');
+          }
+          return;
+        }
+        
+        setUser(authUser);
+        console.log('✅ AdminDashboard: Admin role validated (fallback), proceeding to load data...');
       }
-      return;
-    }
-    
-    setUser(authUser);
-    console.log('✅ AdminDashboard: Admin role validated, proceeding to load data...');
+    };
+
+    validateUserSession();
 
     // Subscribe to real-time updates
     const unsubscribeEnquiry = subscribe('enquiry_added', () => {
