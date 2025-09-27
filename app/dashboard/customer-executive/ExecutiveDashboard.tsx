@@ -48,7 +48,7 @@ export default function ExecutiveDashboard() {
           dailyAnalysisResponse,
           recentConversationsResponse
         ] = await Promise.allSettled([
-          fetch('/api/visitors?limit=100', { headers }),
+          fetch(`${API_BASE}/api/visitors?limit=100`, { headers }),
           fetch('/api/analytics/daily-analysis?limit=7', { headers }),
           fetch('/api/analytics/recent-conversations?limit=5', { headers })
         ]);

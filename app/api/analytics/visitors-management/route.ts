@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
 import { createAuthenticatedHandler, requireAdminOrExecutive, getUserContext } from '@/lib/middleware/auth';
 import Visitor from '@/lib/models/Visitor';
+import { corsHeaders } from '@/lib/cors';
 
 async function getVisitorsManagement(request: NextRequest, user: any) {
   try {
@@ -116,7 +117,7 @@ async function getVisitorsManagement(request: NextRequest, user: any) {
       assignmentHistory: v.assignmentHistory || []
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       visitors: transformedVisitors,
       pagination: {
         page: pageNum,
@@ -129,6 +130,13 @@ async function getVisitorsManagement(request: NextRequest, user: any) {
         canAccessAll: userContext.canAccessAll
       }
     });
+    
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    return response;
 
   } catch (error) {
     console.error('Analytics visitors management error:', error);

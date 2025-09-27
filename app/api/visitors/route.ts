@@ -1,193 +1,294 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic';
 import { connectMongo } from '@/lib/mongo';
 import Visitor from '@/lib/models/Visitor';
+import MemoryStorage from '@/lib/memoryStorage';
 
-// Handle CORS preflight requests
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers: corsHeaders,
   });
 }
 
-// POST /api/visitors - Create visitor
+export async function GET(request: NextRequest) {
+  try {
+    console.log('🔄 GET /api/visitors - Fetching visitors');
+    
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const source = searchParams.get('source') || '';
+
+    console.log('📊 Visitors API params:', { page, limit, search, status, source });
+
+    let visitors = [];
+    let totalCount = 0;
+
+    try {
+      await connectMongo();
+      console.log('✅ Connected to MongoDB');
+
+      // Build filter
+      const filter: any = {};
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } }
+        ];
+      }
+      if (status) {
+        filter.status = status;
+      }
+      if (source) {
+        filter.source = source;
+      }
+
+      // Fetch visitors with pagination
+      const [visitorsData, count] = await Promise.all([
+        Visitor.find(filter)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        Visitor.countDocuments(filter)
+      ]);
+
+      visitors = visitorsData;
+      totalCount = count;
+
+      console.log(`📊 Found ${visitors.length} visitors (page ${page}/${Math.ceil(totalCount / limit)})`);
+
+    } catch (mongoError) {
+      console.log('⚠️ MongoDB connection failed, using memory storage');
+      console.error('MongoDB error:', mongoError);
+      
+      // Use memory storage as fallback
+      const memoryStorage = MemoryStorage.getInstance();
+      const { visitors: memoryVisitors, count: memoryCount } = memoryStorage.getVisitors(
+        { search, status, source },
+        page,
+        limit
+      );
+      
+      visitors = memoryVisitors;
+      totalCount = memoryCount;
+      
+      console.log(`📊 Memory storage: ${visitors.length} visitors`);
+    }
+
+    // Transform visitors data for frontend
+    const transformedVisitors = visitors.map((visitor: any, index: number) => ({
+      _id: visitor._id.toString(),
+      srNo: (page - 1) * limit + index + 1,
+      name: visitor.name || '',
+      email: visitor.email || '',
+      phone: visitor.phone || '',
+      organization: visitor.organization || '',
+      service: visitor.service || 'General Inquiry',
+      subservice: visitor.subservice || '',
+      source: visitor.source || 'chatbot',
+      status: visitor.status || 'enquiry_required',
+      priority: visitor.priority || 'medium',
+      createdAt: visitor.createdAt || visitor.lastInteractionAt || new Date(),
+      lastInteractionAt: visitor.lastInteractionAt || visitor.createdAt || new Date(),
+      isConverted: visitor.isConverted || false,
+      agentName: visitor.agentName || '',
+      salesExecutiveName: visitor.salesExecutiveName || '',
+      comments: visitor.comments || '',
+      amount: visitor.amount || 0,
+      enquiryDetails: visitor.enquiryDetails || ''
+    }));
+
+    const response = NextResponse.json({
+      success: true,
+      visitors: transformedVisitors,
+      count: totalCount,
+      page: page,
+      totalPages: Math.ceil(totalCount / limit),
+      message: 'Visitors loaded successfully'
+    });
+
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error('❌ Visitors API error:', error);
+    
+    const response = NextResponse.json({
+      success: false,
+      message: 'Failed to load visitors',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      visitors: [],
+      count: 0,
+      page: 1,
+      totalPages: 0
+    }, { status: 500 });
+
+    // Add CORS headers even for errors
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 POST /api/visitors - Creating/updating visitor');
+    console.log('🔄 POST /api/visitors - Creating visitor');
     
-    await connectMongo();
+    const body = await request.json();
+    console.log('📝 Visitor data:', body);
 
     const {
-      name = '',
-      email = '',
-      phone = '',
-      organization = '',
-      service = '',
-      subservice = '',
-      source = 'chatbot',
-      location = '',
-      meta = {}
-    } = await request.json();
-
-    const payload = {
       name,
-      email: email ? String(email).toLowerCase() : '',
+      email,
       phone,
       organization,
       service,
       subservice,
       source,
-      location,
-      meta: (meta && typeof meta === 'object') ? meta : {},
-      lastInteractionAt: new Date(),
-      isConverted: false,
-      status: 'enquiry_required',
-      leadScore: 0,
-      priority: 'medium',
-      pipelineHistory: []
-    };
+      enquiryDetails
+    } = body;
 
-    let doc, created = false;
-
-    if (payload.email) {
-      console.log(`🔍 Searching for existing visitor by email: ${payload.email}`);
-      doc = await Visitor.findOneAndUpdate(
-        { email: payload.email },
-        { $set: payload },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-      );
-      created = doc.createdAt && Math.abs(Date.now() - doc.createdAt.getTime()) < 5000;
-      console.log(`✅ Visitor ${created ? 'created' : 'updated'} by email: ${doc._id}`);
-    } else if (payload.phone) {
-      console.log(`🔍 Searching for existing visitor by phone: ${payload.phone}`);
-      doc = await Visitor.findOneAndUpdate(
-        { phone: payload.phone },
-        { $set: payload },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-      );
-      created = doc.createdAt && Math.abs(Date.now() - doc.createdAt.getTime()) < 5000;
-      console.log(`✅ Visitor ${created ? 'created' : 'updated'} by phone: ${doc._id}`);
-    } else {
-      console.log('🆕 Creating new visitor (no email or phone provided)');
-      doc = await Visitor.create(payload);
-      created = true;
-      console.log(`✅ New visitor created: ${doc._id}`);
+    // Validate required fields
+    if (!name) {
+      return NextResponse.json({
+        success: false,
+        message: 'Name is required'
+      }, { status: 400 });
     }
 
-    // Verify the document was saved
-    const savedDoc = await Visitor.findById(doc._id);
-    if (!savedDoc) {
-      console.error('❌ CRITICAL: Visitor was not saved to MongoDB!');
-      return NextResponse.json({ ok: false, message: 'Failed to save visitor to database' }, { status: 500 });
-    }
-    console.log('✅ Verified visitor saved to MongoDB:', savedDoc._id);
+    let savedVisitor;
 
-    // Get total count for verification
-    const totalVisitors = await Visitor.countDocuments();
-    console.log(`📊 Total visitors in database: ${totalVisitors}`);
-
-    return NextResponse.json({ 
-      ok: true, 
-      visitorId: String(doc._id), 
-      created,
-      totalVisitors 
-    }, { status: created ? 201 : 200 });
-
-  } catch (error: any) {
-    console.error('❌ Visitor upsert error:', error);
-    const message = error.name === 'ValidationError' ? error.message : 'Failed to save visitor';
-    return NextResponse.json({ ok: false, message }, { status: 400 });
-  }
-}
-
-// GET /api/visitors - Get visitors (optimized for serverless)
-export async function GET(request: NextRequest) {
-  try {
-    console.log('🔄 GET /api/visitors - Fetching visitors list');
-    
-    // Set timeout for the entire operation
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), 25000); // 25 second timeout
-    });
-    
-    const operationPromise = async () => {
+    try {
       await connectMongo();
-      
-      const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '10'); // Reduced default limit
-      const q = searchParams.get('q') || '';
-      
-      const n = Math.min(Math.max(limit, 1), 50); // Reduced max limit
-      const p = Math.max(page, 1);
-      let filter = {};
-      
-      if (q) {
-        const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-        filter = { 
-          $or: [
-            { name: rx }, 
-            { email: rx }, 
-            { phone: rx }, 
-            { organization: rx },
-            { service: rx },
-            { status: rx }
-          ] 
-        };
-        console.log('🔍 Search filter applied:', filter);
+      console.log('✅ Connected to MongoDB');
+
+      // Check if visitor already exists
+      let existingVisitor = null;
+      if (phone) {
+        existingVisitor = await Visitor.findOne({ phone: phone });
       }
+      if (!existingVisitor && email) {
+        existingVisitor = await Visitor.findOne({ email: email });
+      }
+
+      if (existingVisitor) {
+        // Update existing visitor
+        existingVisitor.name = name;
+        existingVisitor.email = email || existingVisitor.email;
+        existingVisitor.phone = phone || existingVisitor.phone;
+        existingVisitor.organization = organization || existingVisitor.organization;
+        existingVisitor.service = service || existingVisitor.service;
+        existingVisitor.subservice = subservice || existingVisitor.subservice;
+        existingVisitor.source = source || existingVisitor.source;
+        existingVisitor.lastInteractionAt = new Date();
+        
+        savedVisitor = await existingVisitor.save();
+        console.log('✅ Existing visitor updated:', savedVisitor._id);
+      } else {
+        // Create new visitor
+        const visitorData = {
+          name,
+          email: email || '',
+          phone: phone || '',
+          organization: organization || '',
+          service: service || 'General Inquiry',
+          subservice: subservice || '',
+          source: source || 'chatbot',
+          location: '',
+          meta: {},
+          lastInteractionAt: new Date(),
+          isConverted: false,
+          status: 'enquiry_required',
+          leadScore: 0,
+          priority: 'medium',
+          pipelineHistory: []
+        };
+        
+        const visitor = new Visitor(visitorData);
+        savedVisitor = await visitor.save();
+        console.log('✅ New visitor created:', savedVisitor._id);
+      }
+
+    } catch (mongoError) {
+      console.log('⚠️ MongoDB connection failed, using memory storage');
+      console.error('MongoDB error:', mongoError);
       
-      console.log('📊 Fetching visitors with filter:', filter);
+      // Use memory storage as fallback
+      const memoryStorage = MemoryStorage.getInstance();
+      const visitorData = {
+        name,
+        email: email || '',
+        phone: phone || '',
+        organization: organization || '',
+        service: service || 'General Inquiry',
+        subservice: subservice || '',
+        source: source || 'chatbot',
+        enquiryDetails: enquiryDetails || '',
+        status: 'enquiry_required',
+        priority: 'medium',
+        lastModifiedBy: 'system',
+        lastModifiedAt: new Date()
+      };
       
-      // Optimize query with projection and limit
-      const items = await Visitor.find(filter)
-        .select('name email phone organization service status createdAt agentName')
-        .sort({ createdAt: -1 })
-        .skip((p - 1) * n)
-        .limit(n)
-        .lean()
-        .maxTimeMS(10000); // 10 second query timeout
-      
-      // Get total count with timeout
-      const total = await Visitor.countDocuments(filter).maxTimeMS(5000);
-      
-      console.log(`✅ Found ${items.length} visitors (page ${p}/${Math.ceil(total / n)})`);
-      console.log(`📊 Total visitors in database: ${total}`);
-      
-      return { total, page: p, pageSize: n, items };
-    };
-    
-    const result = await Promise.race([operationPromise(), timeoutPromise]);
-    return NextResponse.json(result, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+      savedVisitor = memoryStorage.addVisitor(visitorData);
+      console.log('✅ Visitor saved to memory storage:', savedVisitor._id);
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      message: 'Visitor saved successfully',
+      visitor: {
+        _id: savedVisitor._id,
+        name: savedVisitor.name,
+        email: savedVisitor.email,
+        phone: savedVisitor.phone,
+        organization: savedVisitor.organization,
+        service: savedVisitor.service,
+        subservice: savedVisitor.subservice,
+        source: savedVisitor.source,
+        status: savedVisitor.status,
+        createdAt: savedVisitor.createdAt
+      }
     });
 
-  } catch (error: any) {
-    console.error('❌ Visitors list error:', error);
-    
-    // Return empty result instead of error for better UX
-    return NextResponse.json({ 
-      total: 0, 
-      page: 1, 
-      pageSize: 10, 
-      items: [],
-      error: 'Database connection timeout. Please try again.' 
-    }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
     });
+
+    return response;
+
+  } catch (error) {
+    console.error('❌ Create visitor API error:', error);
+    
+    const response = NextResponse.json({
+      success: false,
+      message: 'Failed to create visitor',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+
+    // Add CORS headers even for errors
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
   }
 }
