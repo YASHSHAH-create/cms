@@ -41,7 +41,7 @@ export default function RecentList({ items, title }: RecentListProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+    <div>
       <h3 className="text-lg font-semibold text-slate-900 mb-4">{title}</h3>
       
       <div className="space-y-3">

@@ -50,7 +50,7 @@ export default function StatCard({
       </div>
       
       <div className="flex items-baseline justify-between">
-        <div className="text-3xl font-semibold text-slate-900">
+        <div className="text-3xl font-bold" style={{ color: '#2d4891' }}>
           {formatValue(value)}
         </div>
         

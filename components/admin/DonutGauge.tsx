@@ -8,13 +8,14 @@ interface DonutGaugeProps {
 }
 
 export default function DonutGauge({ value, label = "Conversion Rate", height = 200 }: DonutGaugeProps) {
-  // Guard against NaN/Infinity
-  const safeValue = isNaN(value) || !isFinite(value) ? 0 : Math.max(0, Math.min(1, value));
-  const percentage = Math.round(safeValue * 100);
+  // Guard against NaN/Infinity and handle percentage values
+  const safeValue = isNaN(value) || !isFinite(value) ? 0 : Math.max(0, Math.min(100, value));
+  const percentage = Math.round(safeValue);
+  const normalizedValue = safeValue / 100;
   
   const data = [
-    { name: 'Converted', value: safeValue, color: '#64aa53' },
-    { name: 'Not Converted', value: 1 - safeValue, color: '#e2e8f0' }
+    { name: 'Converted', value: normalizedValue, color: '#64aa53' },
+    { name: 'Not Converted', value: 1 - normalizedValue, color: '#e2e8f0' }
   ];
 
   return (

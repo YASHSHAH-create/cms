@@ -13,14 +13,17 @@ interface TimeseriesLineProps {
 }
 
 export default function TimeseriesLine({ data, height = 300 }: TimeseriesLineProps) {
-  // Format data for recharts
-  const chartData = data.map(item => ({
-    ...item,
-    date: new Date(item.date).toLocaleDateString('en-US', { 
-      day: '2-digit', 
-      month: 'short' 
-    })
-  }));
+  // Format data for recharts with day names
+  const chartData = data.map(item => {
+    const date = new Date(item.date);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayNumber = date.getDate();
+    return {
+      ...item,
+      date: `${dayName} ${dayNumber}`,
+      fullDate: item.date
+    };
+  });
 
   const hasData = data.length > 0 && data.some(item => item.visitors > 0);
 
@@ -60,6 +63,7 @@ export default function TimeseriesLine({ data, height = 300 }: TimeseriesLinePro
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              tickFormatter={(value) => `${value} visitors`}
             />
             <Tooltip
               contentStyle={{

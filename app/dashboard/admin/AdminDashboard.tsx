@@ -147,18 +147,16 @@ export default function AdminDashboard() {
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-slate-900">{dashboardTitle}</h1>
-                  <p className="text-slate-600 mt-2">{dashboardDescription}</p>
+                  <h1 className="text-3xl font-bold" style={{ color: '#2d4891' }}>Admin Dashboard</h1>
+                  <p className="text-slate-600 mt-2">System Overview</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm text-slate-500">
-                    Last updated: {formatLastUpdated(lastUpdated)}
-                  </div>
+                <div className="text-sm text-slate-500">
+                  Last updated: {formatLastUpdated(lastUpdated)}
                 </div>
               </div>
             </div>
 
-            {/* Statistics Cards */}
+            {/* Statistics Cards - 12 Column Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Total Visitors"
@@ -186,33 +184,43 @@ export default function AdminDashboard() {
               />
             </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div className="lg:col-span-2">
-                <TimeseriesLine data={dailyData} height={300} />
+            {/* Charts Row - Daily Visitors (8 cols) + Conversion Rate (4 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+              <div className="lg:col-span-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Daily Visitors (7 Days)</h3>
+                  <TimeseriesLine data={dailyData} height={300} />
+                </div>
               </div>
-              <div className="lg:col-span-1">
-                <DonutGauge 
-                  value={summary?.conversionRate || 0} 
-                  label="Conversion Rate"
-                  height={300}
-                />
+              <div className="lg:col-span-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Conversion Rate</h3>
+                  <DonutGauge
+                    value={summary?.conversionRate || 0}
+                    label="Converted"
+                    height={300}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Recent Activity Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <RecentList 
-                  items={recentItems} 
-                  title="Recent Visitors" 
-                />
+            {/* Recent Activity Row - Recent Visitors (8 cols) + Active Conversations (4 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <RecentList 
+                    items={recentItems} 
+                    title="Recent Visitors" 
+                  />
+                </div>
               </div>
-              <div className="lg:col-span-1">
-                <RecentList 
-                  items={recentItems.filter(item => item.messages > 0)} 
-                  title="Active Conversations" 
-                />
+              <div className="lg:col-span-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <RecentList 
+                    items={recentItems.filter(item => item.messages > 0)} 
+                    title="Active Conversations" 
+                  />
+                </div>
               </div>
             </div>
 

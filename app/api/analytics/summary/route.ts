@@ -21,7 +21,7 @@ export async function GET() {
     ]);
 
     const chatbotEnquiries = Array.isArray(chatbotVisitorIds) ? chatbotVisitorIds.length : 0;
-    const conversionRate = totalVisitors > 0 ? (leadsAcquired / totalVisitors) * 100 : 0;
+    const conversionRate = totalVisitors > 0 ? Math.round((leadsAcquired / totalVisitors) * 100) : 0;
 
     return NextResponse.json({
       totalVisitors,
