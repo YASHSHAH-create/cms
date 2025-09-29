@@ -128,7 +128,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
                   await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
                 } finally {
                   if (typeof window !== "undefined") localStorage.removeItem("ems_auth_v1");
-                  window.location.href = "/login";
+                  window.location.href = "/auth/login";
                 }
               }}
               className="w-full flex items-center px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-200 rounded-md transition-all duration-200 group"
@@ -203,7 +203,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
               await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
             } finally {
               if (typeof window !== "undefined") localStorage.removeItem("ems_auth_v1");
-              window.location.href = "/login";
+              window.location.href = "/auth/login";
             }
           }}
           className={`w-full text-white hover:bg-red-500/20 hover:text-red-200 rounded-md transition-all duration-200 group ${

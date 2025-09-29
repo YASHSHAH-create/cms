@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/hooks/useAuth';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,18 +10,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
-
-  // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === 'admin') {
-        router.push('/dashboard/admin/overview');
-      } else {
-        router.push('/dashboard/executive');
-      }
-    }
-  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,20 +22,23 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username: email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        // Store token in cookie
+        document.cookie = `access_token=${data.token}; path=/; max-age=86400`;
+        
         // Redirect based on role
-        if (data.role === 'admin') {
+        if (data.user.role === 'admin') {
           router.push('/dashboard/admin/overview');
         } else {
           router.push('/dashboard/executive');
         }
       } else {
-        setError(data.error || 'Login failed');
+        setError(data.message || 'Login failed');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -64,7 +55,10 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Access the Envirocare EMS Dashboard
+            Or{' '}
+            <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              create a new account
+            </Link>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -104,9 +98,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
-            </div>
+            <div className="text-red-600 text-sm text-center">{error}</div>
           )}
 
           <div>
@@ -117,11 +109,6 @@ export default function LoginPage() {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-          </div>
-
-          <div className="text-center text-sm text-gray-600">
-            <p>Admin: admin@envirocarelabs.com</p>
-            <p>Executive: Use your registered email</p>
           </div>
         </form>
       </div>
