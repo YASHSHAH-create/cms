@@ -98,9 +98,18 @@ const MOCK_RECENT: RecentItem[] = [
 
 /**
  * Check if mock mode is enabled
+ * Mock mode kicks in when:
+ * - NEXT_PUBLIC_USE_MOCK=1 is set, OR
+ * - We're not on localhost (production/Netlify), OR
+ * - Any API fetch fails
  */
+export function isMock(): boolean {
+  return process.env.NEXT_PUBLIC_USE_MOCK === '1' ||
+    (typeof window !== 'undefined' && window?.location?.hostname !== 'localhost');
+}
+
 function isMockMode(): boolean {
-  return process.env.NEXT_PUBLIC_USE_MOCK === '1';
+  return isMock();
 }
 
 /**
@@ -108,6 +117,19 @@ function isMockMode(): boolean {
  */
 async function delay(ms: number = 300): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Safe fetch that returns null on any failure
+ */
+async function safeFetch<T>(url: string): Promise<T | null> {
+  try {
+    const r = await fetch(url, { credentials: "include" });
+    if (!r.ok) return null;
+    return (await r.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -120,28 +142,18 @@ export async function getSummary(range: "7d" | "30d" | "90d"): Promise<Summary> 
   }
 
   try {
-    // Try to fetch from existing API endpoints and compose Summary
-    const [dailyVisitorsRes, conversionRateRes, recentConversationsRes] = await Promise.all([
-      fetch(`/api/analytics/daily-visitors?days=${range === '7d' ? 7 : range === '30d' ? 30 : 90}`, { 
-        credentials: "include" 
-      }),
-      fetch('/api/analytics/conversion-rate', { 
-        credentials: "include" 
-      }),
-      fetch('/api/analytics/recent-conversations?limit=5', { 
-        credentials: "include" 
-      })
-    ]);
-
-    if (!dailyVisitorsRes.ok || !conversionRateRes.ok || !recentConversationsRes.ok) {
-      throw new Error('API fetch failed');
-    }
-
+    // Try to fetch from existing API endpoints using safeFetch
     const [dailyVisitors, conversionRate, recentConversations] = await Promise.all([
-      dailyVisitorsRes.json(),
-      conversionRateRes.json(),
-      recentConversationsRes.json()
+      safeFetch(`/api/analytics/daily-visitors?days=${range === '7d' ? 7 : range === '30d' ? 30 : 90}`),
+      safeFetch('/api/analytics/conversion-rate'),
+      safeFetch('/api/analytics/recent-conversations?limit=5')
     ]);
+
+    // If any API fails, return mock data
+    if (!dailyVisitors || !conversionRate || !recentConversations) {
+      console.log('API fetch failed, using mock data');
+      return MOCK_SUMMARY;
+    }
 
     // Compose Summary from existing API responses
     const totalVisitors = conversionRate?.visitors || 0;
@@ -181,15 +193,12 @@ export async function getDaily(range: "7d" | "30d" | "90d"): Promise<DailyPoint[
 
   try {
     const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
-    const response = await fetch(`/api/analytics/daily-visitors?days=${days}`, {
-      credentials: "include"
-    });
+    const data = await safeFetch(`/api/analytics/daily-visitors?days=${days}`);
 
-    if (!response.ok) {
-      throw new Error('Daily data fetch failed');
+    if (!data) {
+      console.log('Daily data fetch failed, using mock data');
+      return MOCK_DAILY;
     }
-
-    const data = await response.json();
     
     // Transform existing API response to DailyPoint format
     if (data.labels && data.datasets && data.datasets[0]) {
@@ -219,15 +228,12 @@ export async function getRecent(limit: number = 5): Promise<RecentItem[]> {
   }
 
   try {
-    const response = await fetch(`/api/analytics/recent-conversations?limit=${limit}`, {
-      credentials: "include"
-    });
+    const conversations = await safeFetch(`/api/analytics/recent-conversations?limit=${limit}`);
 
-    if (!response.ok) {
-      throw new Error('Recent data fetch failed');
+    if (!conversations) {
+      console.log('Recent data fetch failed, using mock data');
+      return MOCK_RECENT.slice(0, limit);
     }
-
-    const conversations = await response.json();
     
     // Transform existing API response to RecentItem format
     return conversations.map((conv: any) => ({

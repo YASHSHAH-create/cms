@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "NEXT_PUBLIC_USE_MOCK=1 npm run build"
   publish = ".next"
 
 [build.environment]
@@ -15,6 +15,9 @@
 # API routes configuration
 [functions]
   node_bundler = "esbuild"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 # Headers for security and performance
 [[headers]]
