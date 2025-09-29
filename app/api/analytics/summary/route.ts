@@ -16,19 +16,19 @@ export async function GET() {
     const [totalVisitors, leadsAcquired, chatbotVisitorIds, pendingConversations] = await Promise.all([
       Visitor.countDocuments({}),
       Enquiry.countDocuments({ status: { $in: LEAD_STATUSES } }),
-      ChatMessage.distinct("visitorId"), // count distinct visitors who chatted
+      ChatMessage.distinct("visitorId"),
       Enquiry.countDocuments({ status: { $in: PENDING_STATUSES } }),
     ]);
 
-    const chatbotEnquiries = Array.isArray(chatbotVisitorIds) ? chatbotVisitorIds.length : 0;
-    const conversionRate = totalVisitors > 0 ? Math.round((leadsAcquired / totalVisitors) * 100) : 0;
+    const conversionRate =
+      totalVisitors > 0 ? Math.round((Number(leadsAcquired) / Number(totalVisitors)) * 100) : 0;
 
     return NextResponse.json({
-      totalVisitors,
-      leads: leadsAcquired,
-      chatbotEnquiries,
-      pendingConversations,
-      conversionRate,
+      totalVisitors: Number(totalVisitors) || 0,
+      leads: Number(leadsAcquired) || 0,
+      chatbotEnquiries: Array.isArray(chatbotVisitorIds) ? chatbotVisitorIds.length : 0,
+      pendingConversations: Number(pendingConversations) || 0,
+      conversionRate, // integer percent 0..100
     });
   } catch (error) {
     console.error('Summary API error:', error);

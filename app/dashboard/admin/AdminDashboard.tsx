@@ -65,9 +65,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
+      } finally {
+        setLoading(false);
+      }
   }, [token]);
 
   // Real-time event handler
@@ -141,23 +141,21 @@ export default function AdminDashboard() {
         <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
         <div className="flex-1 flex flex-col">
           <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-          <div className="flex-1 p-6">
-            
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
+          <div className="flex-1 bg-[#f7f9fc] min-h-screen">
+            <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
+              {/* Header */}
+              <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold" style={{ color: '#2d4891' }}>Admin Dashboard</h1>
+                  <h1 className="text-3xl font-bold text-[#2d4891]">Admin Dashboard</h1>
                   <p className="text-slate-600 mt-2">System Overview</p>
                 </div>
                 <div className="text-sm text-slate-500">
                   Last updated: {formatLastUpdated(lastUpdated)}
                 </div>
               </div>
-            </div>
 
-            {/* Statistics Cards - 12 Column Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Total Visitors"
                 value={summary?.totalVisitors || 0}
@@ -184,64 +182,65 @@ export default function AdminDashboard() {
               />
             </div>
 
-            {/* Charts Row - Daily Visitors (8 cols) + Conversion Rate (4 cols) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-              <div className="lg:col-span-8">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Daily Visitors (7 Days)</h3>
-                  <TimeseriesLine data={dailyData} height={300} />
-                </div>
-              </div>
-              <div className="lg:col-span-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Conversion Rate</h3>
-                  <DonutGauge
-                    value={summary?.conversionRate || 0}
-                    label="Converted"
-                    height={300}
-                  />
-                </div>
-              </div>
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8">
+                <div className="xl:col-span-8">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Daily Visitors (7 Days)</h3>
+                    <TimeseriesLine data={dailyData} height={300} />
+                  </div>
             </div>
-
-            {/* Recent Activity Row - Recent Visitors (8 cols) + Active Conversations (4 cols) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-8">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <RecentList 
-                    items={recentItems} 
-                    title="Recent Visitors" 
-                  />
-                </div>
-              </div>
-              <div className="lg:col-span-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <RecentList 
-                    items={recentItems.filter(item => item.messages > 0)} 
-                    title="Active Conversations" 
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Error Display */}
-            {error && (
-              <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <div className="text-red-500 mr-3">⚠️</div>
-                  <div>
-                    <h4 className="text-sm font-medium text-red-800">Error Loading Data</h4>
-                    <p className="text-sm text-red-600 mt-1">{error}</p>
-                    <button
-                      onClick={fetchData}
-                      className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-                    >
-                      Try again
-                    </button>
+                <div className="xl:col-span-4">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Conversion Rate</h3>
+                    <DonutGauge
+                      value={summary?.conversionRate || 0}
+                      label="Converted"
+                      height={300}
+                    />
                   </div>
                 </div>
               </div>
-            )}
+
+              {/* Recent Activity Row */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <div className="xl:col-span-8">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                    <RecentList 
+                      items={recentItems} 
+                      title="Recent Visitors" 
+                    />
+                  </div>
+                </div>
+                <div className="xl:col-span-4">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                    <RecentList 
+                      items={recentItems.filter(item => item.messages > 0)} 
+                      title="Active Conversations" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="text-red-500 mr-3">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-800">Error Loading Data</h4>
+                      <p className="text-sm text-red-600 mt-1">{error}</p>
+                      <button
+                        onClick={fetchData}
+                        className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
