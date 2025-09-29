@@ -137,12 +137,11 @@ export default function AdminDashboard() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50 flex">
+      <div className="flex h-screen">
         <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-        <div className="flex-1 flex flex-col">
+        <main className="flex-1 overflow-y-auto bg-[#f7f9fc]">
           <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-          <div className="flex-1 bg-[#f7f9fc] min-h-screen">
-            <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
+          <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
               {/* Header */}
               <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
                 <div>
@@ -240,9 +239,8 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
-            </div>
           </div>
-        </div>
+        </main>
       </div>
     </AuthGuard>
   );
