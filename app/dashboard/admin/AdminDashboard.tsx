@@ -22,27 +22,35 @@ import RecentList from '@/components/admin/RecentList';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, loading, isAdmin } = useAuth();
-  
-  // Role-based access control
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  if (!isAdmin) return <div className="p-6 text-red-600">403 — Admins only</div>;
+  const { token, user: authUser, isAuthenticated } = useAuth();
   
   // State management
   const [summary, setSummary] = useState<Summary | null>(null);
   const [dailyData, setDailyData] = useState<DailyPoint[]>([]);
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [activeItems, setActiveItems] = useState<RecentItem[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
+
+  // Set user data when authUser changes
+  useEffect(() => {
+    if (authUser) {
+      setUser({
+        id: authUser.id,
+        name: authUser.name,
+        role: authUser.role
+      });
+    }
+  }, [authUser]);
 
   // Data fetching function
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!token) return;
 
     try {
-      setDataLoading(true);
+      setLoading(true);
       setError(null);
 
           const [summaryData, dailyDataResult, recentData, activeData] = await Promise.all([
@@ -57,13 +65,13 @@ export default function AdminDashboard() {
           setRecentItems(recentData);
           setActiveItems(activeData);
       setLastUpdated(new Date());
-        } catch (err) {
-          console.error('Failed to fetch dashboard data:', err);
-          setError('Failed to load dashboard data');
-        } finally {
-          setDataLoading(false);
-        }
-      }, [user]);
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+  }, [token]);
 
   // Real-time event handler
   const handleRealtimeEvent = useCallback((event: string, data?: any) => {
@@ -109,30 +117,33 @@ export default function AdminDashboard() {
   };
 
   // Loading state
-  if (dataLoading && !summary) {
+  if (loading && !summary) {
     return (
-      <div className="min-h-screen bg-slate-50 flex">
-        <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-          <div className="flex-1 p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-slate-600">Loading dashboard...</p>
+      <AuthGuard>
+        <div className="min-h-screen bg-slate-50 flex">
+          <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+          <div className="flex-1 flex flex-col">
+            <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+            <div className="flex-1 p-6">
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-slate-600">Loading dashboard...</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </AuthGuard>
     );
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
-      <main className="flex-1 overflow-y-auto bg-[#f7f9fc]">
-        <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+    <AuthGuard>
+      <div className="flex h-screen">
+        <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+        <main className="flex-1 overflow-y-auto bg-[#f7f9fc]">
+          <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
           <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
               {/* Header */}
               <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
@@ -234,5 +245,6 @@ export default function AdminDashboard() {
           </div>
         </main>
       </div>
+    </AuthGuard>
   );
 }

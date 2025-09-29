@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   <p className="text-green-800 text-sm font-medium">{success}</p>
                   <div className="mt-3">
                     <Link
-                      href="/auth/login"
+                      href="/login"
                       className="text-green-700 hover:text-green-600 text-sm font-medium underline"
                     >
                       Go to Login Page
@@ -294,7 +294,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link href="/auth/login" className="text-[#2d4891] hover:text-[#1e3a8a] font-medium">
+              <Link href="/login" className="text-[#2d4891] hover:text-[#1e3a8a] font-medium">
                 Login here
               </Link>
             </p>
