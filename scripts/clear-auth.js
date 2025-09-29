@@ -16,4 +16,4 @@ console.log('=== Authentication Data Cleared ===');
 console.log('Please refresh the page and login again with your credentials.');
 
 // Reload the page to redirect to login
-window.location.href = '/auth/login';
+window.location.href = '/login';

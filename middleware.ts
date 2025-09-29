@@ -14,7 +14,7 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
   const claims = token ? verifyJwt(token) : null;
 
-  if (!claims) return NextResponse.redirect(new URL("/auth/login", req.url));
+  if (!claims) return NextResponse.redirect(new URL("/login", req.url));
 
   // Role checks
   if (adminPaths.some(p => url.startsWith(p)) && claims.role !== "admin") {
