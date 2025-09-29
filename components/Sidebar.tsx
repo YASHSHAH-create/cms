@@ -123,10 +123,13 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
           {/* Mobile logout */}
           <div className="p-4 border-t border-white/10">
             <button
-              onClick={() => {
-                localStorage.removeItem('ems_token');
-                localStorage.removeItem('ems_user');
-                window.location.href = '/login';
+              onClick={async () => {
+                try {
+                  await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+                } finally {
+                  if (typeof window !== "undefined") localStorage.removeItem("ems_auth_v1");
+                  window.location.href = "/auth/login";
+                }
               }}
               className="w-full flex items-center px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-200 rounded-md transition-all duration-200 group"
             >
@@ -195,10 +198,13 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
       {/* Logout button pinned at bottom */}
       <div className="p-4 border-t border-white/10">
         <button
-          onClick={() => {
-            localStorage.removeItem('ems_token');
-            localStorage.removeItem('ems_user');
-            window.location.href = '/login';
+          onClick={async () => {
+            try {
+              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            } finally {
+              if (typeof window !== "undefined") localStorage.removeItem("ems_auth_v1");
+              window.location.href = "/auth/login";
+            }
           }}
           className={`w-full text-white hover:bg-red-500/20 hover:text-red-200 rounded-md transition-all duration-200 group ${
             isCollapsed 

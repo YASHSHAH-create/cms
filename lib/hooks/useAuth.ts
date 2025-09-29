@@ -1,103 +1,55 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from "react";
 
-interface User {
+type AuthUser = {
   id: string;
+  role: "admin" | "executive";
   name: string;
-  role: string;
-  email?: string;
-}
+  email: string;
+  avatar?: string | null;
+};
+
+const KEY = "ems_auth_v1"; // single-key store with role inside
 
 export function useAuth() {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get token from localStorage
-  const getToken = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('ems_token');
-    }
-    return null;
-  }, []);
+  useEffect(() => {
+    let cancelled = false;
 
-  // Get user from localStorage
-  const getUser = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('ems_user');
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch (e) {
-          console.error('Error parsing user data:', e);
-          return null;
+    async function load() {
+      try {
+        const r = await fetch("/api/auth/me", { cache: "no-store", credentials: "include" });
+        if (!r.ok) throw new Error("unauthorized");
+        const u: AuthUser = await r.json();
+
+        // If local storage has a different role, purge stale UI state
+        const cached = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
+        const prev = cached ? (JSON.parse(cached) as AuthUser) : null;
+        if (prev && prev.role !== u.role) {
+          localStorage.removeItem(KEY);
         }
+
+        if (!cancelled) {
+          setUser(u);
+          localStorage.setItem(KEY, JSON.stringify(u));
+        }
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
-    return null;
+
+    load();
+    return () => { cancelled = true; };
   }, []);
 
-  // Check if user is authenticated
-  const isAuthenticated = useCallback(() => {
-    const currentToken = getToken();
-    const currentUser = getUser();
-    return !!(currentToken && currentUser);
-  }, [getToken, getUser]);
-
-  // Login function
-  const login = useCallback((authToken: string, userData: User) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ems_token', authToken);
-      localStorage.setItem('ems_user', JSON.stringify(userData));
-      setToken(authToken);
-      setUser(userData);
-    }
-  }, []);
-
-  // Logout function
-  const logout = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('ems_token');
-      localStorage.removeItem('ems_user');
-      setToken(null);
-      setUser(null);
-    }
-  }, []);
-
-  // Refresh token and user data
-  const refresh = useCallback(() => {
-    const currentToken = getToken();
-    const currentUser = getUser();
-    setToken(currentToken);
-    setUser(currentUser);
-    setLoading(false);
-  }, [getToken, getUser]);
-
-  // Initialize auth state
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  // Listen for storage changes (when user logs in/out in another tab)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'ems_token' || e.key === 'ems_user') {
-        refresh();
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', handleStorageChange);
-      return () => window.removeEventListener('storage', handleStorageChange);
-    }
-  }, [refresh]);
-
-  return {
-    token,
-    user,
-    loading,
-    isAuthenticated: isAuthenticated(),
-    login,
-    logout,
-    refresh
+  return { 
+    user, 
+    loading, 
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "admin", 
+    isExecutive: user?.role === "executive" 
   };
 }
