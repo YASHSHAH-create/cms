@@ -9,7 +9,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import { getRolePermissions, getDashboardTitle, getDashboardDescription } from '@/lib/utils/roleBasedAccess';
 
 // Analytics data layer
-import { getSummary, getDaily, getRecent, Summary, DailyPoint, RecentItem, isMock } from '@/lib/analytics';
+import { getSummary, getDaily, getRecent, Summary, DailyPoint, RecentItem, REFRESH_MS } from '@/lib/analytics';
 
 // Real-time hooks
 import { useRealtime, useRealtimeListener } from '@/hooks/useRealtime';
@@ -19,7 +19,6 @@ import StatCard from '@/components/admin/StatCard';
 import TimeseriesLine from '@/components/admin/TimeseriesLine';
 import DonutGauge from '@/components/admin/DonutGauge';
 import RecentList from '@/components/admin/RecentList';
-import DateRangePicker from '@/components/admin/DateRangePicker';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -31,7 +30,6 @@ export default function AdminDashboard() {
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d">("7d");
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
 
@@ -55,8 +53,8 @@ export default function AdminDashboard() {
       setError(null);
 
       const [summaryData, dailyDataResult, recentData] = await Promise.all([
-        getSummary(dateRange),
-        getDaily(dateRange),
+        getSummary(),
+        getDaily(),
         getRecent(5)
       ]);
 
@@ -70,7 +68,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [token, dateRange]);
+  }, [token]);
 
   // Real-time event handler
   const handleRealtimeEvent = useCallback((event: string, data?: any) => {
@@ -86,6 +84,15 @@ export default function AdminDashboard() {
   // Initial data fetch
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Real-time polling
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, REFRESH_MS);
+
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   // Get role-based permissions
@@ -136,12 +143,6 @@ export default function AdminDashboard() {
           <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
           <div className="flex-1 p-6">
             
-            {/* Mock Mode Badge */}
-            {isMock() && (
-              <div className="fixed top-20 right-6 z-20 rounded-full bg-slate-800/90 text-white px-3 py-1 text-xs">
-                Mock Mode
-              </div>
-            )}
             {/* Header */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
@@ -150,7 +151,6 @@ export default function AdminDashboard() {
                   <p className="text-slate-600 mt-2">{dashboardDescription}</p>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <DateRangePicker value={dateRange} onChange={setDateRange} />
                   <div className="text-sm text-slate-500">
                     Last updated: {formatLastUpdated(lastUpdated)}
                   </div>

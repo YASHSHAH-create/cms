@@ -1,14 +1,5 @@
 import React from 'react';
-
-interface RecentItem {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  messages: number;
-  tags?: string[];
-  joinedAt?: string;
-}
+import { RecentItem } from '@/lib/analytics';
 
 interface RecentListProps {
   items: RecentItem[];
@@ -16,7 +7,7 @@ interface RecentListProps {
 }
 
 export default function RecentList({ items, title }: RecentListProps) {
-  const formatTime = (dateString?: string): string => {
+  const formatTime = (dateString?: string | null): string => {
     if (!dateString) return 'Unknown';
     
     const date = new Date(dateString);
