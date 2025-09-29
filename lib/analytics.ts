@@ -51,6 +51,11 @@ export const getDaily = () => j<DailyPoint[]>("/api/analytics/daily-visitors");
 export const getRecent = (limit: number = 5) => j<RecentItem[]>(`/api/analytics/recent-conversations?limit=${limit}`);
 
 /**
+ * Fetch active conversations from live MongoDB (last 48h)
+ */
+export const getActive = (limit: number = 5) => j<RecentItem[]>(`/api/analytics/active-conversations?limit=${limit}`);
+
+/**
  * Refresh interval for real-time updates
  */
 export const REFRESH_MS = 10000; // 10s polling

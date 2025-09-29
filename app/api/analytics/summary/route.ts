@@ -6,8 +6,13 @@ import ChatMessage from "@/lib/models/ChatMessage";
 
 export const dynamic = "force-dynamic";
 
-const LEAD_STATUSES = ["converted", "won", "closed_won", "lead"];
-const PENDING_STATUSES = ["new", "open", "pending", "assigned"];
+// Case-insensitive status sets
+const LEAD_STATUSES = ["converted","won","closed_won","lead"];
+const PENDING_STATUSES = ["new","open","pending","assigned"];
+
+function ciRegexSet(values: string[]) {
+  return { $in: values.map(v => new RegExp(`^${v}$`, "i")) };
+}
 
 export async function GET() {
   try {
@@ -15,20 +20,21 @@ export async function GET() {
 
     const [totalVisitors, leadsAcquired, chatbotVisitorIds, pendingConversations] = await Promise.all([
       Visitor.countDocuments({}),
-      Enquiry.countDocuments({ status: { $in: LEAD_STATUSES } }),
+      Enquiry.countDocuments({ status: ciRegexSet(LEAD_STATUSES) as any }),
       ChatMessage.distinct("visitorId"),
-      Enquiry.countDocuments({ status: { $in: PENDING_STATUSES } }),
+      Enquiry.countDocuments({ status: ciRegexSet(PENDING_STATUSES) as any }),
     ]);
 
-    const conversionRate =
-      totalVisitors > 0 ? Math.round((Number(leadsAcquired) / Number(totalVisitors)) * 100) : 0;
+    const tot = Number(totalVisitors) || 0;
+    const leads = Number(leadsAcquired) || 0;
+    const conversionRate = tot > 0 ? Math.round((leads / tot) * 100) : 0;
 
     return NextResponse.json({
-      totalVisitors: Number(totalVisitors) || 0,
-      leads: Number(leadsAcquired) || 0,
+      totalVisitors: tot,
+      leads,
       chatbotEnquiries: Array.isArray(chatbotVisitorIds) ? chatbotVisitorIds.length : 0,
       pendingConversations: Number(pendingConversations) || 0,
-      conversionRate, // integer percent 0..100
+      conversionRate, // integer 0..100
     });
   } catch (error) {
     console.error('Summary API error:', error);

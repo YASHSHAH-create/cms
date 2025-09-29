@@ -9,7 +9,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import { getRolePermissions, getDashboardTitle, getDashboardDescription } from '@/lib/utils/roleBasedAccess';
 
 // Analytics data layer
-import { getSummary, getDaily, getRecent, Summary, DailyPoint, RecentItem, REFRESH_MS } from '@/lib/analytics';
+import { getSummary, getDaily, getRecent, getActive, Summary, DailyPoint, RecentItem, REFRESH_MS } from '@/lib/analytics';
 
 // Real-time hooks
 import { useRealtime, useRealtimeListener } from '@/hooks/useRealtime';
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [dailyData, setDailyData] = useState<DailyPoint[]>([]);
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
+  const [activeItems, setActiveItems] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -52,15 +53,17 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
 
-      const [summaryData, dailyDataResult, recentData] = await Promise.all([
-        getSummary(),
-        getDaily(),
-        getRecent(5)
-      ]);
+          const [summaryData, dailyDataResult, recentData, activeData] = await Promise.all([
+            getSummary(),
+            getDaily(),
+            getRecent(5),
+            getActive(5)
+          ]);
 
-      setSummary(summaryData);
-      setDailyData(dailyDataResult);
-      setRecentItems(recentData);
+          setSummary(summaryData);
+          setDailyData(dailyDataResult);
+          setRecentItems(recentData);
+          setActiveItems(activeData);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
@@ -214,7 +217,7 @@ export default function AdminDashboard() {
                 <div className="xl:col-span-4">
                   <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
                     <RecentList 
-                      items={recentItems.filter(item => item.messages > 0)} 
+                      items={activeItems} 
                       title="Active Conversations" 
                     />
                   </div>
