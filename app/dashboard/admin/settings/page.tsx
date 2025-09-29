@@ -125,7 +125,7 @@ export default function SettingsPage() {
   const logout = () => {
     localStorage.removeItem('ems_token');
     localStorage.removeItem('ems_user');
-    window.location.href = '/login';
+    window.location.href = '/auth/login';
   };
 
   // Don't render if user is not loaded

@@ -82,7 +82,7 @@ export default function AdminEnquiriesPage() {
         setError('Authentication failed. Please login again.');
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return;
       }
 
@@ -145,7 +145,7 @@ export default function AdminEnquiriesPage() {
       console.error('No authentication token or user data found');
       setError('Please login to access this page.');
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
       }, 2000);
       return;
     }
@@ -159,7 +159,7 @@ export default function AdminEnquiriesPage() {
       localStorage.removeItem('ems_token');
       localStorage.removeItem('ems_user');
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
       }, 2000);
       return;
     }
@@ -172,7 +172,7 @@ export default function AdminEnquiriesPage() {
       console.error('No authentication token found');
       setError('No authentication token found. Please login again.');
       // Redirect to login page
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -221,7 +221,7 @@ export default function AdminEnquiriesPage() {
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = '/auth/login';
         }, 2000);
       } else {
         let errorMessage = 'Unknown error';
@@ -430,7 +430,7 @@ export default function AdminEnquiriesPage() {
     if (!token) {
       console.error('No authentication token found');
       setError('No authentication token found. Please login again.');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -470,7 +470,7 @@ export default function AdminEnquiriesPage() {
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = '/auth/login';
         }, 2000);
       } else {
         const errorData = await response.json().catch(() => ({}));

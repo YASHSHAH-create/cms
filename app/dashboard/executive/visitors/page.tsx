@@ -312,7 +312,7 @@ export default function ExecutiveVisitorsPage() {
           setError('Authentication failed. Please login again.');
           localStorage.removeItem('ems_token');
           localStorage.removeItem('ems_user');
-          window.location.href = '/login';
+          window.location.href = '/auth/login';
           return;
         }
 
@@ -358,7 +358,7 @@ export default function ExecutiveVisitorsPage() {
     // Check authentication first
     const token = localStorage.getItem('ems_token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -374,14 +374,14 @@ export default function ExecutiveVisitorsPage() {
         // Clear invalid data and redirect to login
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return;
       }
     } else {
       // No user data, redirect to login
       console.log('❌ No user data found in localStorage');
       localStorage.removeItem('ems_token');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 

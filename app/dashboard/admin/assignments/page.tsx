@@ -65,7 +65,7 @@ export default function AdminAssignmentsPage() {
         setError('Authentication failed. Please login again.');
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return;
       }
 

@@ -68,7 +68,7 @@ export default function ExecutiveEnquiriesPage() {
         setError('Authentication failed. Please login again.');
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return;
       }
 
@@ -159,7 +159,7 @@ export default function ExecutiveEnquiriesPage() {
     if (!token) {
       console.error('No authentication token found');
       setError('No authentication token found. Please login again.');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -218,7 +218,7 @@ export default function ExecutiveEnquiriesPage() {
     if (!token) {
       console.error('No authentication token found');
       setError('No authentication token found. Please login again.');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
       return;
     }
 
@@ -258,7 +258,7 @@ export default function ExecutiveEnquiriesPage() {
         localStorage.removeItem('ems_token');
         localStorage.removeItem('ems_user');
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = '/auth/login';
         }, 2000);
       } else {
         const errorData = await response.json().catch(() => ({}));
