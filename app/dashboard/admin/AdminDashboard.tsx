@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import AuthGuard from '@/components/AuthGuard';
@@ -10,10 +10,14 @@ import StatBox from '@/components/StatBox';
 import RoleBasedStatBox from '@/components/RoleBasedStatBox';
 import { getRolePermissions, getDashboardTitle, getDashboardDescription } from '@/lib/utils/roleBasedAccess';
 import { useRealtimeSync } from '@/lib/utils/realtimeSync';
+import { useRealtimeAnalytics } from '@/lib/hooks/useRealtimeAnalytics';
 import DailyVisitorsChart from '@/components/DailyVisitorsChart';
 import ConversionRateChart from '@/components/ConversationRatioChart';
-import DailyAnalysisTable from '@/components/DailyAnalysisTable';
 import RecentConversations from '@/components/RecentConversations';
+import VisitorSourcesChart from '@/components/VisitorSourcesChart';
+import RealtimeActivityFeed from '@/components/RealtimeActivityFeed';
+import VisitorActivityFeed from '@/components/VisitorActivityFeed';
+import TestChart from '@/components/TestChart';
 import EnquiryForm from '@/components/EnquiryForm';
 // Chart components imported but not used in this component
 import {
@@ -29,65 +33,16 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-type DailyVisitorsData = {
-  labels: string[];
-  datasets: {
-    label: string;
-    data: number[];
-    borderColor: string;
-    backgroundColor: string;
-  }[];
-};
-
-type ConversationRatioData = {
-  visitors: number;
-  leadsConverted: number;
-  conversionRate: number;
-};
-
-type DailyAnalysisData = {
-  date: string;
-  visitors: number;
-  enquiries: number;
-  messages: number;
-  conversionRate: number;
-};
-
-type RecentConversationData = {
-  visitor: {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-    organization: string;
-    service: string;
-    isConverted: boolean;
-    createdAt: string;
-    lastInteractionAt?: string;
-  };
-  messages: {
-    _id: string;
-    visitorId: string;
-    sender: 'user' | 'bot';
-    message: string;
-    at: string;
-  }[];
-  messageCount: number;
-  lastMessageAt?: string;
-};
-
 export default function AdminDashboard() {
   const router = useRouter();
   const { token, user: authUser, isAuthenticated } = useAuth();
   const { subscribe, refreshAll } = useRealtimeSync();
-  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
-  const [dailyVisitorsData, setDailyVisitorsData] = useState<DailyVisitorsData | null>(null);
-  const [conversationRatioData, setConversationRatioData] = useState<ConversationRatioData | null>(null);
-  const [dailyAnalysisData, setDailyAnalysisData] = useState<DailyAnalysisData[]>([]);
-  const [recentConversationsData, setRecentConversationsData] = useState<RecentConversationData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
   const [showEnquiryForm, setShowEnquiryForm] = useState(false);
 
   // API base URL - always use current domain
@@ -95,363 +50,346 @@ export default function AdminDashboard() {
     if (typeof window !== 'undefined') {
       return window.location.origin;
     }
-    return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+    return 'http://localhost:3000';
   })();
-  const permissions = user ? getRolePermissions(user) : null;
 
-  // Fallback data when API is not available
-  const fallbackData = {
-    dailyVisitors: {
-      labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      datasets: [{
-        label: 'Visitors',
-        data: [12, 19, 8, 15, 22, 18, 25],
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      }]
-    },
-    conversationRatio: {
-      visitors: 150,
-      leadsConverted: 45,
-      conversionRate: 30
-    },
-    dailyAnalysis: [
-      {
-        date: new Date().toISOString().split('T')[0],
-        visitors: 25,
-        enquiries: 8,
-        messages: 15,
-        conversionRate: 32
-      },
-      {
-        date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-        visitors: 18,
-        enquiries: 5,
-        messages: 12,
-        conversionRate: 28
-      },
-      {
-        date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
-        visitors: 22,
-        enquiries: 7,
-        messages: 18,
-        conversionRate: 32
+  // Set user data when auth user changes
+  useEffect(() => {
+    if (authUser) {
+      setUser({
+        id: authUser.id,
+        name: authUser.name,
+        role: authUser.role
+      });
+    }
+  }, [authUser]);
+
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('🔄 Fetching real-time analytics data...');
+      const response = await fetch('/api/analytics/realtime');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics data');
       }
-    ],
-    recentConversations: [
-      {
-        visitor: {
-          _id: '1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          phone: '123-456-7890',
-          organization: 'ABC Corp',
-          service: 'Water Testing',
-          isConverted: false,
-          createdAt: new Date().toISOString(),
-          lastInteractionAt: new Date().toISOString()
-        },
-        messages: [
-          { _id: '1', visitorId: '1', sender: 'user' as const, message: 'Hello, I need water testing services', at: new Date().toISOString() },
-          { _id: '2', visitorId: '1', sender: 'bot' as const, message: 'Great! I can help you with water testing. What type of water do you need tested?', at: new Date().toISOString() }
-        ],
-        messageCount: 2,
-        lastMessageAt: new Date().toISOString()
-      },
-      {
-        visitor: {
-          _id: '2',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          phone: '987-654-3210',
-          organization: 'XYZ Ltd',
-          service: 'Environmental Testing',
-          isConverted: true,
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          lastInteractionAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        messages: [
-          { _id: '3', visitorId: '2', sender: 'user' as const, message: 'What are your environmental testing capabilities?', at: new Date(Date.now() - 3600000).toISOString() },
-          { _id: '4', visitorId: '2', sender: 'bot' as const, message: 'We offer comprehensive environmental testing including air, water, and soil analysis.', at: new Date(Date.now() - 3500000).toISOString() }
-        ],
-        messageCount: 2,
-        lastMessageAt: new Date(Date.now() - 3500000).toISOString()
-      }
-    ]
+      
+      const data = await response.json();
+      console.log('📊 Analytics data received:', data);
+      setAnalyticsData(data);
+      setLastUpdate(new Date());
+      setIsConnected(true);
+      
+      console.log('✅ Real-time analytics data fetched successfully');
+    } catch (err) {
+      console.error('❌ Error fetching analytics data:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setIsConnected(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  useEffect(() => {
-    // Check authentication using useAuth hook
-    if (!isAuthenticated || !authUser || !token) {
-      console.log('❌ AdminDashboard: Not authenticated, redirecting to login');
-      router.push('/login');
-      return;
-    }
-    
-    console.log('👤 AdminDashboard: User data loaded:', { 
-      name: authUser.name, 
-      role: authUser.role,
-      id: authUser.id
-    });
-    
-    // Validate user session with server to ensure correct user data
-    const validateUserSession = async () => {
-      try {
-        console.log('🔍 AdminDashboard: Starting user session validation...');
-        console.log('🔍 Current authUser from useAuth:', authUser);
-        console.log('🔍 Current token:', token ? 'Present' : 'Missing');
-        
-        const response = await fetch('/api/auth/dynamic-validate-session', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('🔍 Server validation response:', result);
-          
-          if (result.success) {
-            const validatedUser = result.user;
-            console.log('✅ AdminDashboard: Session validated with server:', validatedUser);
-            
-            // CRITICAL: Check if this is actually an admin user
-            if (validatedUser.role !== 'admin') {
-              console.error('❌ CRITICAL: Server returned non-admin user for admin dashboard!', validatedUser);
-              console.error('❌ This explains why you see Sanjana\'s name instead of admin!');
-              
-              // Clear all cached data and redirect to login
-              localStorage.clear();
-              sessionStorage.clear();
-              alert('Authentication error detected. Please login again as admin.');
-              router.push('/login');
-              return;
-            }
-            
-            // Update localStorage with validated data
-            localStorage.setItem('ems_user', JSON.stringify(validatedUser));
-            
-            setUser(validatedUser);
-            console.log('✅ AdminDashboard: Admin role validated, proceeding to load data...');
-          } else {
-            console.log('❌ AdminDashboard: Session validation failed:', result.message);
-            localStorage.clear();
-            router.push('/login');
-          }
-        } else {
-          console.log('❌ AdminDashboard: Session validation request failed');
-          localStorage.clear();
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('❌ AdminDashboard: Session validation error:', error);
-        console.log('⚠️ AdminDashboard: Using localStorage data as fallback');
-        
-        // CRITICAL: Check if localStorage has correct admin data
-        if (authUser.role !== 'admin') {
-          console.error('❌ CRITICAL: localStorage contains non-admin user for admin dashboard!', authUser);
-          console.error('❌ This explains why you see Sanjana\'s name instead of admin!');
-          
-          // Clear all cached data and redirect to login
-          localStorage.clear();
-          sessionStorage.clear();
-          alert('Authentication error detected. Please login again as admin.');
-          router.push('/login');
-          return;
-        }
-        
-        setUser(authUser);
-        console.log('✅ AdminDashboard: Admin role validated (fallback), proceeding to load data...');
-      }
-    };
-
-    validateUserSession();
-
     // Subscribe to real-time updates
+  useEffect(() => {
     const unsubscribeEnquiry = subscribe('enquiry_added', () => {
-      console.log('📝 New enquiry added, refreshing dashboard data...');
-      setRefreshKey(prev => prev + 1);
+      console.log('📝 New enquiry added, refreshing analytics...');
+      fetchAnalyticsData();
     });
 
     const unsubscribeVisitor = subscribe('visitor_added', () => {
-      console.log('👥 New visitor added, refreshing dashboard data...');
-      setRefreshKey(prev => prev + 1);
+      console.log('👥 New visitor added, refreshing analytics...');
+      fetchAnalyticsData();
     });
 
     // Listen for manual refresh events
-    const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    const handleRefresh = () => fetchAnalyticsData();
     window.addEventListener('dashboard_refresh', handleRefresh);
 
-    const loadData = async () => {
-      if (!token) {
-        // Use fallback data when no token is available
-        setDailyVisitorsData(fallbackData.dailyVisitors);
-        setConversationRatioData(fallbackData.conversationRatio);
-        setDailyAnalysisData(fallbackData.dailyAnalysis);
-        setRecentConversationsData(fallbackData.recentConversations);
-        setLoading(false);
-        return;
-      }
+    // Initial data fetch
+    fetchAnalyticsData();
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-
-        // Fetch all data in parallel
-        const [
-          dailyVisitorsRes,
-          conversationRatioRes,
-          dailyAnalysisRes,
-          recentConversationsRes
-        ] = await Promise.all([
-          fetch(`${API_BASE}/api/analytics/daily-visitors?days=7`, { headers }),
-          fetch(`${API_BASE}/api/analytics/conversion-rate`, { headers }),
-          fetch(`${API_BASE}/api/analytics/daily-analysis?limit=10`, { headers }),
-          fetch(`${API_BASE}/api/analytics/recent-conversations?limit=5`, { headers })
-        ]);
-
-        // Check for authentication errors
-        if (dailyVisitorsRes.status === 401) {
-          setError('Authentication failed. Please login again.');
-          localStorage.removeItem('ems_token');
-          localStorage.removeItem('ems_user');
-          window.location.href = '/login';
-          return;
-        }
-
-        // Handle daily visitors data
-        if (dailyVisitorsRes.ok) {
-          const dailyVisitors = await dailyVisitorsRes.json();
-          setDailyVisitorsData(dailyVisitors);
-        } else {
-          // Use fallback data if API fails
-          setDailyVisitorsData(fallbackData.dailyVisitors);
-        }
-
-        // Handle conversation ratio data
-        if (conversationRatioRes.ok) {
-          const conversationRatio = await conversationRatioRes.json();
-          setConversationRatioData(conversationRatio);
-        } else {
-          // Use fallback data if API fails
-          setConversationRatioData(fallbackData.conversationRatio);
-        }
-
-        // Handle daily analysis data
-        if (dailyAnalysisRes.ok) {
-          const dailyAnalysis = await dailyAnalysisRes.json();
-          setDailyAnalysisData(dailyAnalysis);
-        } else {
-          // Use fallback data if API fails
-          setDailyAnalysisData(fallbackData.dailyAnalysis);
-        }
-
-        // Handle recent conversations data
-        if (recentConversationsRes.ok) {
-          const recentConversations = await recentConversationsRes.json();
-          setRecentConversationsData(recentConversations);
-        } else {
-          // Use fallback data if API fails
-          setRecentConversationsData(fallbackData.recentConversations);
-        }
-
-      } catch (e) {
-        console.error('Error loading dashboard data:', e);
-        // Use fallback data when API calls fail completely
-        setDailyVisitorsData(fallbackData.dailyVisitors);
-        setConversationRatioData(fallbackData.conversationRatio);
-        setDailyAnalysisData(fallbackData.dailyAnalysis);
-        setRecentConversationsData(fallbackData.recentConversations);
-        setError(null); // Don't show error, just use fallback data
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchAnalyticsData, 30000);
 
     // Cleanup function
     return () => {
       unsubscribeEnquiry();
       unsubscribeVisitor();
       window.removeEventListener('dashboard_refresh', handleRefresh);
+      clearInterval(interval);
     };
-  }, [API_BASE, token, router, isAuthenticated, authUser, subscribe, refreshKey]);
+  }, [subscribe]);
 
-  // Calculate statistics from real data
-  const totalVisitors = conversationRatioData?.visitors || 0;
-  const leadsAcquired = conversationRatioData?.leadsConverted || 0;
+  // Manual refresh function
+  const refreshAnalytics = () => fetchAnalyticsData();
+
+  // Calculate statistics from real-time analytics data
+  const totalVisitors = analyticsData?.totals?.visitors || 0;
+  const leadsAcquired = analyticsData?.conversionRate?.leadsConverted || 0;
   const chatbotEnquiries = Math.round(totalVisitors * 0.8);
-  const pendingConversations = Math.round(totalVisitors * 0.2);
+  const conversionRate = analyticsData?.conversionRate?.conversionRate || 0;
 
-  // Don't render if user is not admin
-  if (!user || user.role !== 'admin') {
-    return null;
+  // Generate visitor sources data for the bar chart
+  const visitorSourcesData = {
+    labels: ['Website', 'Chatbot', 'Email', 'Calls', 'Social Media'],
+    datasets: [{
+      label: 'Visitors by Source',
+      data: [
+        Math.round(totalVisitors * 0.4), // Website
+        Math.round(totalVisitors * 0.3), // Chatbot
+        Math.round(totalVisitors * 0.15), // Email
+        Math.round(totalVisitors * 0.1), // Calls
+        Math.round(totalVisitors * 0.05), // Social Media
+      ],
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+      ],
+      borderColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(139, 92, 246, 1)',
+      ],
+      borderWidth: 2,
+    }]
+  };
+
+  // Generate visitor activity data from analytics
+  const generateVisitorActivity = () => {
+    if (!analyticsData?.recentConversations) return [];
+    
+    return analyticsData.recentConversations.map((conv: any, index: number) => ({
+      _id: conv.visitor._id,
+      name: conv.visitor.name,
+      email: conv.visitor.email,
+      phone: conv.visitor.phone,
+      organization: conv.visitor.organization,
+      service: conv.visitor.service,
+      isConverted: conv.visitor.isConverted,
+      createdAt: new Date(conv.visitor.createdAt),
+      lastInteractionAt: conv.lastMessageAt ? new Date(conv.lastMessageAt) : undefined,
+      messageCount: conv.messageCount,
+      status: conv.visitor.isConverted ? 'converted' : 
+              conv.messageCount > 0 ? 'active' : 'new'
+    }));
+  };
+
+  // Generate real-time activity feed data
+  const generateActivityFeed = () => {
+    const activities = [];
+    const now = new Date();
+    
+    // Generate sample activities based on real data
+    if (totalVisitors > 0) {
+      activities.push({
+        id: '1',
+        type: 'visitor' as const,
+        title: 'New Visitor',
+        description: `${totalVisitors} total visitors today`,
+        timestamp: new Date(now.getTime() - Math.random() * 300000), // Last 5 minutes
+        icon: '👥',
+        color: 'bg-blue-100 text-blue-800'
+      });
+    }
+    
+    if (leadsAcquired > 0) {
+      activities.push({
+        id: '2',
+        type: 'conversion' as const,
+        title: 'Lead Converted',
+        description: `${leadsAcquired} leads converted today`,
+        timestamp: new Date(now.getTime() - Math.random() * 600000), // Last 10 minutes
+        icon: '🎯',
+        color: 'bg-green-100 text-green-800'
+      });
+    }
+    
+    if (analyticsData?.recentConversations && analyticsData.recentConversations.length > 0) {
+      activities.push({
+        id: '3',
+        type: 'message' as const,
+        title: 'New Message',
+        description: 'New conversation started',
+        timestamp: new Date(now.getTime() - Math.random() * 180000), // Last 3 minutes
+        icon: '💬',
+        color: 'bg-purple-100 text-purple-800'
+      });
+    }
+    
+    return activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  };
+
+  // Get role-based permissions
+  const permissions = user ? getRolePermissions(user) : null;
+  const dashboardTitle = user ? getDashboardTitle(user) : 'Dashboard';
+  const dashboardDescription = user ? getDashboardDescription(user) : 'Welcome to your dashboard';
+
+  // Show loading state
+  if (isLoading && !analyticsData) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex">
+          <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+          <div className="flex-1 flex flex-col">
+            <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+            <div className="flex-1 p-6">
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading real-time analytics...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  // Show error state
+  if (error && !analyticsData) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex">
+          <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+          <div className="flex-1 flex flex-col">
+            <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+            <div className="flex-1 p-6">
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Analytics</h3>
+                  <p className="text-gray-600 mb-4">{error}</p>
+                  <button
+                    onClick={refreshAnalytics}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AuthGuard>
+    );
   }
 
   return (
-    <AuthGuard requiredRole="admin">
-      <div className="flex h-screen bg-gray-100">
-        <Sidebar userRole={user.role} userName={user.name} />
-        
-        <div className="flex-1 flex flex-col overflow-hidden md:ml-0 ml-0">
-          <DashboardHeader userRole={user.role} userName={user.name} />
-        
-      <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
-          {loading && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-800">Loading dashboard...</div>
-            </div>
-          )}
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
+        <div className="flex-1 flex flex-col">
+          <DashboardHeader userRole={(user?.role as 'admin' | 'executive' | 'sales-executive' | 'customer-executive') || 'admin'} />
           
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="text-red-600">{error}</div>
+          <div className="flex-1 p-6">
+            {/* Real-time Status Indicator */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+                  isConnected 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                  }`}></div>
+                  <span>{isConnected ? 'Live Analytics' : 'Connecting...'}</span>
+                </div>
+                {lastUpdate && (
+                  <span className="text-sm text-gray-500">
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={refreshAnalytics}
+                disabled={isLoading}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Refresh</span>
+              </button>
             </div>
-          )}
-          
-          {!loading && (
-            <>
-              {/* Role-Based Stat Boxes */}
-              {user && (
-                <RoleBasedStatBox
-                  user={user}
-                  data={{
-                    totalVisitors,
-                    totalEnquiries: Math.round(totalVisitors * 0.4),
-                    totalMessages: chatbotEnquiries,
-                    leadsConverted: leadsAcquired,
-                    pendingApprovals: user.role === 'admin' ? 3 : undefined,
-                    activeAgents: user.role === 'admin' ? 8 : undefined,
-                  }}
-                />
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatBox
+                title="Total Visitors"
+                value={totalVisitors.toLocaleString()}
+                icon="👥"
+                color="blue"
+              />
+              <StatBox
+                title="Leads Acquired"
+                value={leadsAcquired.toLocaleString()}
+                icon="🎯"
+                color="green"
+              />
+              <StatBox
+                title="Chatbot Enquiries"
+                value={chatbotEnquiries.toLocaleString()}
+                icon="🤖"
+                color="purple"
+              />
+              <StatBox
+                title="Conversion Rate"
+                value={`${conversionRate.toFixed(1)}%`}
+                icon="📈"
+                color="orange"
+              />
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <TestChart />
+              {analyticsData?.dailyVisitors ? (
+                <DailyVisitorsChart data={analyticsData.dailyVisitors} />
+              ) : (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Visitors</h3>
+                  <div className="flex items-center justify-center h-64 text-gray-500">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">📊</div>
+                      <p>Loading chart data...</p>
+                    </div>
+                  </div>
+                </div>
+                )}
+              </div>
+
+            {/* Additional Analytics Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <VisitorSourcesChart data={visitorSourcesData} />
+              <RealtimeActivityFeed 
+                activities={generateActivityFeed()} 
+                isLive={isConnected}
+              />
+              </div>
+
+            {/* Tables Section */}
+            <div className="grid grid-cols-1 gap-6">
+              {analyticsData?.recentConversations && (
+                <RecentConversations conversations={analyticsData.recentConversations} />
               )}
+            </div>
 
-              {/* Charts - Second Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {dailyVisitorsData && (
-                  <DailyVisitorsChart 
-                    data={dailyVisitorsData} 
-                  />
-                )}
-                {conversationRatioData && (
-                  <ConversionRateChart 
-                    visitors={conversationRatioData.visitors} 
-                    leadsConverted={conversationRatioData.leadsConverted} 
-                  />
-                )}
-              </div>
-
-              {/* Tables - Third Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DailyAnalysisTable data={dailyAnalysisData} />
-                <RecentConversations conversations={recentConversationsData} />
-              </div>
-            </>
-          )}
+            {/* Visitor Activity Section */}
+            <div className="grid grid-cols-1 gap-6 mt-8">
+              <VisitorActivityFeed activities={generateVisitorActivity()} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -462,21 +400,29 @@ export default function AdminDashboard() {
         title="Add New Enquiry"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       </button>
 
       {/* Enquiry Form Modal */}
       {showEnquiryForm && (
-        <EnquiryForm
-          onClose={() => setShowEnquiryForm(false)}
-          onSuccess={() => {
-            console.log('✅ Enquiry added successfully, refreshing dashboard...');
-            setRefreshKey(prev => prev + 1);
-          }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Add New Enquiry</h3>
+              <button
+                onClick={() => setShowEnquiryForm(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <EnquiryForm onClose={() => setShowEnquiryForm(false)} />
+          </div>
+        </div>
       )}
-      </div>
     </AuthGuard>
   );
 }
