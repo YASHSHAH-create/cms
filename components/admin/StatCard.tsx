@@ -37,20 +37,20 @@ export default function StatCard({
 
   return (
     <div 
-      className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow"
+      className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 hover:shadow-md transition-shadow"
       title={tooltip}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-slate-600 text-sm font-medium">{title}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-medium text-slate-600">{title}</h3>
         {icon && (
-          <div className="text-slate-400">
+          <div className="text-slate-400 w-5 h-5">
             {icon}
           </div>
         )}
       </div>
       
       <div className="flex items-baseline justify-between">
-        <div className="text-3xl font-semibold text-[#2d4891] leading-none mt-2">
+        <div className="text-2xl font-bold text-[#2d4891] leading-none">
           {formatValue(value)}
         </div>
         

@@ -47,7 +47,7 @@ export default function DonutGauge({ value, label = "Conversion Rate", height = 
         {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-xl font-bold text-slate-900">
               {pct}%
             </div>
             <div className="text-xs text-slate-500">

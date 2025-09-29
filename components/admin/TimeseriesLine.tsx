@@ -29,9 +29,9 @@ export default function TimeseriesLine({ data, height = 300 }: TimeseriesLinePro
 
   if (!hasData) {
     return (
-      <div className="flex items-center justify-center min-h-[280px] text-slate-500">
+      <div className="flex items-center justify-center min-h-[200px] text-slate-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📊</div>
+          <div className="text-3xl mb-2">📊</div>
           <p className="text-sm">No visitor activity in the selected period</p>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default function TimeseriesLine({ data, height = 300 }: TimeseriesLinePro
   }
 
   return (
-    <div className="min-h-[280px]">
+    <div className="min-h-[200px]">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" strokeOpacity={0.2} />

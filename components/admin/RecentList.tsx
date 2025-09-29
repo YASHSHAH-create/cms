@@ -42,11 +42,11 @@ export default function RecentList({ items, title }: RecentListProps) {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">{title}</h3>
+      <h3 className="text-base font-semibold text-slate-800 mb-3">{title}</h3>
       
-      <div className="space-y-3">
+      <div className="space-y-2">
         {items.slice(0, 5).map((item) => (
-          <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
+          <div key={item.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-sm font-medium text-slate-600">

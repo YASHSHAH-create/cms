@@ -144,18 +144,18 @@ export default function AdminDashboard() {
           <div className="flex-1 bg-[#f7f9fc] min-h-screen">
             <div className="max-w-[1400px] mx-auto px-6 lg:px-8 py-6">
               {/* Header */}
-              <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+              <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#2d4891]">Admin Dashboard</h1>
-                  <p className="text-slate-600 mt-2">System Overview</p>
+                  <h1 className="text-2xl font-bold text-[#2d4891]">Admin Dashboard</h1>
+                  <p className="text-sm text-slate-500 mt-1">System Overview</p>
                 </div>
-                <div className="text-sm text-slate-500">
+                <div className="text-xs text-slate-500">
                   Last updated: {formatLastUpdated(lastUpdated)}
                 </div>
               </div>
 
               {/* Statistics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
               <StatCard
                 title="Total Visitors"
                 value={summary?.totalVisitors || 0}
@@ -183,29 +183,29 @@ export default function AdminDashboard() {
             </div>
 
               {/* Charts Row */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
                 <div className="xl:col-span-8">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Daily Visitors (7 Days)</h3>
-                    <TimeseriesLine data={dailyData} height={300} />
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+                    <h3 className="text-base font-semibold text-slate-800 mb-3">Daily Visitors (7 Days)</h3>
+                    <TimeseriesLine data={dailyData} height={200} />
                   </div>
-            </div>
+                </div>
                 <div className="xl:col-span-4">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Conversion Rate</h3>
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+                    <h3 className="text-base font-semibold text-slate-800 mb-3">Conversion Rate</h3>
                     <DonutGauge
                       value={summary?.conversionRate || 0}
                       label="Converted"
-                      height={300}
+                      height={200}
                     />
                   </div>
                 </div>
               </div>
 
               {/* Recent Activity Row */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
                 <div className="xl:col-span-8">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
                     <RecentList 
                       items={recentItems} 
                       title="Recent Visitors" 
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="xl:col-span-4">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
                     <RecentList 
                       items={recentItems.filter(item => item.messages > 0)} 
                       title="Active Conversations" 
