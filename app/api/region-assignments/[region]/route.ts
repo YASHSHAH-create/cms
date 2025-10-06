@@ -7,10 +7,18 @@ import User from '@/lib/models/User';
 async function getSalesExecutivesByRegion(
   request: NextRequest,
   user: any,
-  { params }: { params: { region: string } }
+  context?: { params: Promise<{ region: string }> }
 ) {
   try {
     await connectMongo();
+    
+    const params = await context?.params;
+    if (!params?.region) {
+      return NextResponse.json({
+        success: false,
+        message: 'Region is required'
+      }, { status: 400 });
+    }
     
     const { region } = params;
     

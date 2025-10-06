@@ -25,3 +25,29 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Custom scrollbar styles */
+.scrollbar-custom::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox scrollbar */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}

@@ -87,7 +87,7 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
         notes: entry.notes,
         hasNotes: !!entry.notes,
         notesLength: entry.notes?.length,
-        timestamp: entry.timestamp
+        changedAt: entry.changedAt
       });
     });
   }
@@ -562,31 +562,47 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
     <div className={`bg-white rounded-xl p-6 border border-gray-200 ${className}`}>
       <div className="text-center mb-6">
         <h3 className="text-lg font-semibold text-black mb-2">Pipeline Flowchart</h3>
-        <p className="text-sm text-black">Click on any stage to update visitor status</p>
+        <p className="text-sm text-black">Click on any stage to update visitor status - Scroll horizontally to see all stages</p>
         <div className="mt-3 p-2 bg-blue-50 rounded-lg inline-block">
           <span className="text-sm font-medium text-blue-800">Current Status: </span>
-          <span className="text-sm font-bold text-blue-900">{currentStatus}</span>
+          <span className="text-sm font-bold text-blue-900">{PIPELINE_STAGES.find(s => s.id === currentStatus)?.name || currentStatus}</span>
         </div>
       </div>
       
-      {/* Initial Pipeline Flow */}
-      {renderMainPipeline()}
+      {/* Single Horizontal Scrollable Pipeline */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-custom">
+          {PIPELINE_STAGES.filter(stage => stage.id !== 'unqualified').map((stage, index, arr) => 
+            renderStage(stage, index, index === arr.length - 1)
+          )}
+        </div>
+        
+        {/* Unqualified Stage (shown separately at bottom) */}
+        <div className="mt-4 pt-4 border-t border-gray-300">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">Alternative End:</span>
+            {renderStage(PIPELINE_STAGES.find(s => s.id === 'unqualified')!, 0, true)}
+          </div>
+        </div>
+      </div>
       
-      {/* Qualified Pipeline (only shown if qualified) */}
-      {renderQualifiedPipeline()}
-      
-      {/* Parallel Process (only shown if converted or beyond) */}
-      {renderParallelProcess()}
-      
-      {/* Stage History */}
-      <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-black flex items-center gap-2">
-            <div className="w-5 h-5 bg-blue-500 rounded-full"></div>
-            Stage History
-          </h4>
-          <div className="text-sm text-black">
-            Total Updates: {stageHistory.length}
+      {/* Stage History with Executive Notes */}
+      <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              Stage History & Executive Notes
+            </h4>
+            <p className="text-sm text-blue-700 mt-1">Complete timeline with all stage updates and notes</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-600">{stageHistory.length}</div>
+            <div className="text-xs text-blue-700">Total Updates</div>
           </div>
         </div>
         
@@ -601,25 +617,25 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
             <p className="text-sm text-black">Start by clicking on a stage to update the visitor status</p>
           </div>
         ) : (
-          <div className="space-y-4 max-h-80 overflow-y-auto">
+          <div className="space-y-5 max-h-[600px] overflow-y-auto scrollbar-custom pr-2">
             {sortedStageHistory.map((entry, index) => (
-              <div key={entry.id} className={`rounded-lg border shadow-sm hover:shadow-md transition-shadow ${
+              <div key={entry.id} className={`rounded-xl border-2 shadow-lg hover:shadow-xl transition-all duration-200 ${
                 entry.isAutoFilled 
-                  ? 'bg-blue-50 border-blue-200' 
-                  : 'bg-white border-gray-200'
+                  ? 'bg-blue-50 border-blue-300' 
+                  : 'bg-white border-gray-300'
               }`}>
                 <div className="p-4">
                   {/* Header with stage info and status */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-4 pb-3 border-b-2 border-gray-200">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-semibold text-black">{entry.stageName}</span>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                          <span className="text-xl font-bold text-gray-900">{entry.stageName}</span>
+                          <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full shadow-sm">
                             Stage {getPipelineStageOrder(entry.stageId) + 1}
                           </span>
                           {entry.isAutoFilled && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                            <span className="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">
                               Auto-filled
                             </span>
                           )}
@@ -656,30 +672,30 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
                     </div>
                   </div>
                   
-                  {/* Executive Notes */}
+                  {/* Executive Notes - Prominently Displayed */}
                   {entry.executiveNotes && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="mt-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-lg shadow-md">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
-                          <span className="text-sm font-semibold text-blue-800">Executive Notes</span>
+                          <span className="text-base font-bold text-amber-900">Executive Notes *</span>
                         </div>
                         {!editingNotes && !readOnly && (
                           <button
                             onClick={() => startEditingNotes(entry.id, entry.executiveNotes || '')}
-                            className="text-blue-600 hover:text-blue-800 text-xs underline"
+                            className="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors"
                           >
-                            Edit
+                            Edit Notes
                           </button>
                         )}
                       </div>
                       {editingNotes === entry.id ? (
                         <div>
                           <textarea
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder-gray-500"
-                            rows={3}
+                            className="w-full p-3 border-2 border-amber-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-gray-900 placeholder-gray-500 bg-white"
+                            rows={4}
                             value={editNotesText}
                             onChange={(e) => setEditNotesText(e.target.value)}
                             placeholder="Enter your notes here..."
@@ -687,35 +703,41 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
                           <div className="flex justify-end gap-2 mt-2">
                             <button
                               onClick={() => saveEditedNotes(entry.id)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs"
+                              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
                             >
                               Save
                             </button>
                             <button
                               onClick={cancelEditingNotes}
-                              className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-xs"
+                              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 text-sm font-medium"
                             >
                               Cancel
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-sm text-blue-900 font-medium leading-relaxed">{entry.executiveNotes}</div>
+                        <div className="text-base text-amber-950 font-medium leading-relaxed bg-white p-3 rounded border border-amber-200">{entry.executiveNotes}</div>
                       )}
                     </div>
                   )}
                   
                   {/* Add Notes Button for stages without notes */}
                   {!entry.executiveNotes && (
-                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="mt-3 p-4 bg-gradient-to-r from-gray-100 to-gray-50 border-2 border-dashed border-gray-400 rounded-lg">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-black">No notes added yet</span>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          <span className="text-base font-semibold text-gray-700">Executive Notes *</span>
+                        </div>
+                        <span className="text-sm text-gray-600 italic">No notes added yet</span>
                         {!readOnly && (
                           <button
                             onClick={() => startEditingNotes(entry.id, '')}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors shadow-md hover:shadow-lg"
                           >
-                            Add Notes
+                            + Add Notes
                           </button>
                         )}
                       </div>

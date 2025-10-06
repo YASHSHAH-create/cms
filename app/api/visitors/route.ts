@@ -292,3 +292,85 @@ export async function POST(request: NextRequest) {
     return response;
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('🔄 DELETE /api/visitors - Deleting visitors');
+    
+    const { searchParams } = new URL(request.url);
+    const ids = searchParams.get('ids'); // For bulk delete, comma-separated IDs
+    const deleteAll = searchParams.get('deleteAll') === 'true';
+
+    if (!ids && !deleteAll) {
+      return NextResponse.json({
+        success: false,
+        message: 'No visitor IDs provided and deleteAll not specified'
+      }, { status: 400 });
+    }
+
+    let deletedCount = 0;
+
+    try {
+      await connectMongo();
+      console.log('✅ Connected to MongoDB');
+
+      if (deleteAll) {
+        // Delete all visitors
+        const result = await Visitor.deleteMany({});
+        deletedCount = result.deletedCount || 0;
+        console.log(`✅ Deleted all ${deletedCount} visitors`);
+      } else if (ids) {
+        // Delete specific visitors by IDs
+        const idsArray = ids.split(',').filter(id => id.trim());
+        const result = await Visitor.deleteMany({ _id: { $in: idsArray } });
+        deletedCount = result.deletedCount || 0;
+        console.log(`✅ Deleted ${deletedCount} visitors`);
+      }
+
+    } catch (mongoError) {
+      console.log('⚠️ MongoDB connection failed, using memory storage');
+      console.error('MongoDB error:', mongoError);
+      
+      // Use memory storage as fallback
+      const memoryStorage = MemoryStorage.getInstance();
+      
+      if (deleteAll) {
+        deletedCount = memoryStorage.deleteAllVisitors();
+      } else if (ids) {
+        const idsArray = ids.split(',').filter(id => id.trim());
+        deletedCount = memoryStorage.deleteVisitors(idsArray);
+      }
+      
+      console.log(`✅ Memory storage: Deleted ${deletedCount} visitors`);
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} visitor(s)`,
+      deletedCount
+    });
+
+    // Add CORS headers
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error('❌ Delete visitors API error:', error);
+    
+    const response = NextResponse.json({
+      success: false,
+      message: 'Failed to delete visitors',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+
+    // Add CORS headers even for errors
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return response;
+  }
+}

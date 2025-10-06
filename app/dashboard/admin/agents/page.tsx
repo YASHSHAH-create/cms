@@ -32,6 +32,7 @@ type User = {
   role: string;
   region?: string;
   isActive?: boolean;
+  isApproved?: boolean;
   lastLoginAt?: string;
   name: string;
   createdAt: string;
@@ -47,10 +48,13 @@ type AgentPerformance = {
 
 type AgentFormData = {
   name: string;
+  username: string;
   email: string;
   phone: string;
+  password: string;
+  confirmPassword: string;
   role: string;
-  department: string;
+  region: string;
 };
 
 export default function AdminAgentsPage() {
@@ -73,10 +77,13 @@ export default function AdminAgentsPage() {
   // Form states
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
+    username: '',
     email: '',
     phone: '',
-    role: 'executive',
-    department: 'Customer Service'
+    password: '',
+    confirmPassword: '',
+    role: 'sales-executive',
+    region: ''
   });
   const [formLoading, setFormLoading] = useState(false);
   
@@ -250,66 +257,105 @@ export default function AdminAgentsPage() {
   const handleAddAgent = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
+    setError(null);
+    
+    // Validation
+    if (!formData.name || !formData.username || !formData.email || !formData.password) {
+      setError('Please fill in all required fields');
+      setFormLoading(false);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setFormLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setFormLoading(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      setFormLoading(false);
+      return;
+    }
     
     try {
-      const response = await fetch(`${API_BASE}/api/auth/users`, {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: formData.name,
+          username: formData.username,
           email: formData.email,
           phone: formData.phone,
-          password: 'temp123',
+          password: formData.password,
           role: formData.role,
-          department: formData.department
+          region: formData.region
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (data.success || response.ok) {
         const newAgent = data.user;
         setUsers(prev => [...prev, {
-          id: newAgent._id,
-          _id: newAgent._id,
+          id: newAgent.id || newAgent._id,
+          _id: newAgent.id || newAgent._id,
           username: newAgent.username,
           email: newAgent.email,
           role: newAgent.role,
           name: newAgent.name,
-          createdAt: newAgent.createdAt
+          createdAt: newAgent.createdAt || new Date().toISOString()
         }]);
         setShowAddAgent(false);
         setFormData({
           name: '',
+          username: '',
           email: '',
           phone: '',
-          role: 'executive',
-          department: 'Customer Service'
+          password: '',
+          confirmPassword: '',
+          role: 'sales-executive',
+          region: ''
         });
         // Refresh the approved users list
         loadApprovedUsers();
-        alert('Agent added successfully');
+        loadPendingUsers();
+        alert('Agent registered successfully! The agent needs to be approved before they can access the system.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add agent');
+        throw new Error(data.message || 'Failed to add agent');
       }
     } catch (e: any) {
       setError(e.message || 'Failed to add agent');
+      alert(e.message || 'Failed to add agent');
     } finally {
       setFormLoading(false);
     }
   };
 
   // User management functions
-  const handleUserUpdate = (updatedUser: User) => {
-    // Update the user in all relevant state arrays
-    setUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
-    setApprovedUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
-    setPendingUsers(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
+  const handleUserUpdate = (updatedUser: any) => {
+    // Ensure the user has both id and _id for compatibility
+    const userWithId = {
+      ...updatedUser,
+      id: updatedUser.id || updatedUser._id,
+      _id: updatedUser._id
+    };
     
-    console.log('✅ User updated in local state:', updatedUser);
+    // Update the user in all relevant state arrays
+    setUsers(prev => prev.map(u => u._id === userWithId._id ? userWithId : u));
+    setApprovedUsers(prev => prev.map(u => u._id === userWithId._id ? userWithId : u));
+    setPendingUsers(prev => prev.map(u => u._id === userWithId._id ? userWithId : u));
+    
+    console.log('✅ User updated in local state:', userWithId);
   };
 
   const handleEditUser = (user: User) => {
@@ -345,7 +391,7 @@ export default function AdminAgentsPage() {
         const allUsers = data.users || [];
         
         // Filter pending users (explicitly not approved)
-        const pending = allUsers.filter(user => 
+        const pending = allUsers.filter((user: User) => 
           ['sales-executive', 'customer-executive', 'executive'].includes(user.role) && 
           user.isApproved === false
         );
@@ -377,7 +423,7 @@ export default function AdminAgentsPage() {
         const allUsers = data.users || [];
         
         // Filter approved executives - show all executives (like the original behavior)
-        const approved = allUsers.filter(user => 
+        const approved = allUsers.filter((user: User) => 
           ['sales-executive', 'customer-executive', 'executive'].includes(user.role)
         );
         console.log('✅ Filtered approved users:', approved);
@@ -1065,67 +1111,150 @@ export default function AdminAgentsPage() {
 
       {/* Add Agent Popup */}
       {showAddAgent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 my-8">
             <h2 className="text-xl font-bold text-black mb-4">Add New Agent</h2>
             <form onSubmit={handleAddAgent}>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  />
+                {/* Personal Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder="Enter full name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Username <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({...formData, username: e.target.value})}
+                      placeholder="Choose a username"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      placeholder="Enter email address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      placeholder="Enter phone number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      placeholder="Create password (min 6 characters)"
+                      minLength={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      Confirm Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      placeholder="Confirm password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
+                    />
+                  </div>
                 </div>
+
+                {/* Role Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-black mb-1">Role</label>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Role <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    required
                   >
-                    <option value="executive">Executive</option>
-                        <option value="sales-executive">Sales Executive</option>
-                        <option value="customer-executive">Customer Executive</option>
-                    <option value="admin">Admin</option>
+                    <option value="sales-executive">Sales Executive</option>
+                    <option value="customer-executive">Customer Executive</option>
+                   
                   </select>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Sales Executive: Handles leads and sales pipeline | Customer Executive: Manages customer service and support
+                  </p>
                 </div>
+
+                {/* Region */}
                 <div>
-                  <label className="block text-sm font-medium text-black mb-1">Department</label>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Region/Territory
+                  </label>
                   <input
                     type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    value={formData.region}
+                    onChange={(e) => setFormData({...formData, region: e.target.value})}
+                    placeholder="e.g., North India, Mumbai Metro, International"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400"
                   />
                 </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                )}
               </div>
+              
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowAddAgent(false)}
+                  onClick={() => {
+                    setShowAddAgent(false);
+                    setError(null);
+                  }}
                   className="px-4 py-2 text-black border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel

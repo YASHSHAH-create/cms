@@ -98,6 +98,8 @@ export default function Home() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [showPipeline, setShowPipeline] = useState(false);
+  const [selectedVisitors, setSelectedVisitors] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   // Using Next.js API routes instead of external backend
@@ -157,6 +159,141 @@ export default function Home() {
   useEffect(() => {
     loadVisitors();
   }, [loadVisitors]);
+
+  // Delete individual visitor
+  const handleDeleteVisitor = async (visitorId: string) => {
+    if (!confirm('Are you sure you want to delete this visitor? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/visitors?ids=${visitorId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Visitor deleted successfully:', result);
+        // Refresh the visitors list
+        await loadVisitors();
+        // Remove from selected visitors if it was selected
+        setSelectedVisitors(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(visitorId);
+          return newSet;
+        });
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to delete visitor');
+      }
+    } catch (error) {
+      console.error('Error deleting visitor:', error);
+      alert('Failed to delete visitor');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Delete selected visitors
+  const handleDeleteSelected = async () => {
+    if (selectedVisitors.size === 0) {
+      alert('Please select at least one visitor to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedVisitors.size} selected visitor(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const ids = Array.from(selectedVisitors).join(',');
+      const response = await fetch(`/api/visitors?ids=${ids}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Visitors deleted successfully:', result);
+        // Refresh the visitors list
+        await loadVisitors();
+        // Clear selected visitors
+        setSelectedVisitors(new Set());
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to delete visitors');
+      }
+    } catch (error) {
+      console.error('Error deleting visitors:', error);
+      alert('Failed to delete visitors');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Delete all visitors
+  const handleDeleteAll = async () => {
+    if (visitors.length === 0) {
+      alert('No visitors to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ALL ${visitors.length} visitors? This action cannot be undone.`)) {
+      return;
+    }
+
+    // Extra confirmation for delete all
+    if (!confirm('This will permanently delete all visitor data. Are you absolutely sure?')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch('/api/visitors?deleteAll=true', {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ All visitors deleted successfully:', result);
+        // Refresh the visitors list
+        await loadVisitors();
+        // Clear selected visitors
+        setSelectedVisitors(new Set());
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to delete all visitors');
+      }
+    } catch (error) {
+      console.error('Error deleting all visitors:', error);
+      alert('Failed to delete all visitors');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Toggle selection of a single visitor
+  const toggleVisitorSelection = (visitorId: string) => {
+    setSelectedVisitors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(visitorId)) {
+        newSet.delete(visitorId);
+      } else {
+        newSet.add(visitorId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle selection of all visitors
+  const toggleSelectAll = () => {
+    if (selectedVisitors.size === filteredVisitors.length) {
+      setSelectedVisitors(new Set());
+    } else {
+      setSelectedVisitors(new Set(filteredVisitors.map(v => v._id)));
+    }
+  };
 
   // Column visibility change handler
   const handleColumnVisibilityChange = (columnName: string, isVisible: boolean) => {
@@ -365,6 +502,36 @@ export default function Home() {
               <p className="text-gray-600">View and manage all visitors through the pipeline</p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Delete Selected Button */}
+              {selectedVisitors.size > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title={`Delete ${selectedVisitors.size} selected visitor(s)`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  {isDeleting ? 'Deleting...' : `Delete Selected (${selectedVisitors.size})`}
+                </button>
+              )}
+              
+              {/* Delete All Button */}
+              {visitors.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Delete all visitors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  {isDeleting ? 'Deleting...' : 'Delete All'}
+                </button>
+              )}
+
               {/* Export Dropdown */}
               <div className="relative export-dropdown">
                 <button
@@ -627,6 +794,16 @@ export default function Home() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    {/* Checkbox column */}
+                    <th className="px-4 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedVisitors.size === filteredVisitors.length && filteredVisitors.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        title="Select all visitors"
+                      />
+                    </th>
                     {visibleColumns['Sr.no.'] && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Sr.no.
@@ -707,11 +884,25 @@ export default function Home() {
                         Amount
                       </th>
                     )}
+                    {/* Actions column */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredVisitors.map((visitor, index) => (
                     <tr key={visitor._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      {/* Checkbox cell */}
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedVisitors.has(visitor._id)}
+                          onChange={() => toggleVisitorSelection(visitor._id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                          title="Select this visitor"
+                        />
+                      </td>
                       {visibleColumns['Sr.no.'] && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {index + 1}
@@ -827,6 +1018,20 @@ export default function Home() {
                           {visitor.amount ? `₹${visitor.amount.toLocaleString()}` : 'N/A'}
                         </td>
                       )}
+                      {/* Actions cell */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteVisitor(visitor._id)}
+                          disabled={isDeleting}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          title="Delete this visitor"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

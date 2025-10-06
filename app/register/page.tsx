@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('');
   const router = useRouter();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -112,7 +112,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl overflow-hidden">
         <div className="bg-[#2d4891] p-6 flex items-center justify-center">
-          <Image src="/envirocare-logo.png" alt="Envirocare Labs" width={220} height={56} />
+          <Image src="/envirocare-logo.png" alt="Envirocare Labs" width={220} height={56} style={{ height: 'auto' }} />
         </div>
         <div className="bg-green-600 text-white text-center py-4 text-xl font-semibold">
           Executive Registration

@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     await connectMongo();
     console.log('✅ Connected to MongoDB');
 
-    // Get all active agents from database
+    // Get all active agents from database (only customer-executive and executive, NOT sales-executive)
     const agents = await User.find({
-      role: { $in: ['customer-executive', 'executive', 'sales-executive'] },
+      role: { $in: ['customer-executive', 'executive'] },
       isActive: true,
       isApproved: true
     }).select('name username email role department region').lean();
 
-    console.log(`✅ Found ${agents.length} dynamic agents from database`);
+    console.log(`✅ Found ${agents.length} dynamic agents (customer-executive & executive) from database`);
 
     const transformedAgents = agents.map(agent => ({
       _id: agent._id.toString(),
@@ -31,14 +31,16 @@ export async function GET(request: NextRequest) {
       role: agent.role,
       department: agent.department,
       region: agent.region,
-      displayName: `${agent.name} (${agent.role.replace('-', ' ').split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')})`
+      displayName: agent.role === 'customer-executive' 
+        ? `${agent.name} (Customer Executive)` 
+        : `${agent.name} (Executive)`
     }));
 
     const response = NextResponse.json({
       success: true,
       agents: transformedAgents,
       count: transformedAgents.length,
-      message: 'Dynamic agents fetched from database successfully'
+      message: 'Customer executives and executives fetched successfully'
     });
     
     // Add CORS headers

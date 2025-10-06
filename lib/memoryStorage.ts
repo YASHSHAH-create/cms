@@ -124,6 +124,25 @@ class MemoryStorage {
     };
   }
 
+  // Delete specific visitors by IDs
+  deleteVisitors(ids: string[]): number {
+    const storage = this.getStorage();
+    const initialCount = storage.visitors.length;
+    storage.visitors = storage.visitors.filter(visitor => !ids.includes(visitor._id));
+    const deletedCount = initialCount - storage.visitors.length;
+    console.log(`🗑️ Deleted ${deletedCount} visitors from memory storage`);
+    return deletedCount;
+  }
+
+  // Delete all visitors
+  deleteAllVisitors(): number {
+    const storage = this.getStorage();
+    const count = storage.visitors.length;
+    storage.visitors = [];
+    console.log(`🗑️ Deleted all ${count} visitors from memory storage`);
+    return count;
+  }
+
   // Clear all data (for testing)
   clearAll(): void {
     const storage = this.getStorage();

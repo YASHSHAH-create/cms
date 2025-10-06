@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 type Step =
   | 'ask_explore'

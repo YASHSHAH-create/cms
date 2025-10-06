@@ -89,14 +89,35 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Sales executive assigned successfully:', updatedVisitor._id);
 
+    // Return the complete updated visitor object so frontend can update immediately
     const response = NextResponse.json({
       success: true,
       message: 'Sales executive assigned successfully',
       visitor: {
         _id: updatedVisitor._id.toString(),
         name: updatedVisitor.name,
+        email: updatedVisitor.email,
+        phone: updatedVisitor.phone,
+        organization: updatedVisitor.organization,
+        region: updatedVisitor.region,
+        service: updatedVisitor.service,
+        subservice: updatedVisitor.subservice,
+        enquiryDetails: updatedVisitor.enquiryDetails,
+        source: updatedVisitor.source,
+        status: updatedVisitor.status,
+        createdAt: updatedVisitor.createdAt,
+        lastInteractionAt: updatedVisitor.lastInteractionAt,
+        isConverted: updatedVisitor.isConverted,
+        agent: updatedVisitor.agent,
+        agentName: updatedVisitor.agentName,
+        assignedAgent: updatedVisitor.assignedAgent,
         salesExecutive: updatedVisitor.salesExecutive,
-        salesExecutiveName: updatedVisitor.salesExecutiveName
+        salesExecutiveName: updatedVisitor.salesExecutiveName,
+        comments: updatedVisitor.comments,
+        amount: updatedVisitor.amount,
+        pipelineHistory: updatedVisitor.pipelineHistory,
+        lastModifiedBy: updatedVisitor.lastModifiedBy,
+        lastModifiedAt: updatedVisitor.lastModifiedAt
       }
     });
     

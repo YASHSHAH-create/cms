@@ -21,6 +21,41 @@ type EnquiryFormData = {
   email: string;
   enquiryType: 'chatbot' | 'email' | 'calls' | 'website';
   enquiryDetails: string;
+  service?: string;
+  subService?: string;
+};
+
+// Service and Sub-service mapping
+const serviceMapping: Record<string, string[]> = {
+  'Food Testing': [
+    'Microbiological Testing',
+    'Chemical Testing',
+    'Nutritional Analysis',
+    'Pesticide Residue Testing',
+    'Heavy Metal Testing',
+    'Allergen Testing',
+    'Shelf Life Studies',
+    'GMO Testing'
+  ],
+  'Water Testing': [
+    'Drinking Water Analysis',
+    'Industrial Wastewater Testing',
+    'Groundwater Testing',
+    'Surface Water Testing',
+    'Swimming Pool Water Testing',
+    'Packaged Drinking Water Testing',
+    'Effluent Testing',
+    'Seawater Testing'
+  ],
+  'Environmental Testing': [
+    'Air Quality Monitoring',
+    'Soil Testing',
+    'Noise Level Monitoring',
+    'Stack Emission Testing',
+    'Ambient Air Quality',
+    'Indoor Air Quality'
+  ],
+  'Others': []
 };
 
 export default function AdminEnquiriesPage() {
@@ -44,6 +79,11 @@ export default function AdminEnquiriesPage() {
     enquiryType: ''
   });
   const [dataSource, setDataSource] = useState<'enquiries' | 'visitors'>('enquiries');
+  
+  // Service selection states
+  const [selectedService, setSelectedService] = useState<string>('');
+  const [selectedSubService, setSelectedSubService] = useState<string>('');
+  const [customService, setCustomService] = useState<string>('');
 
   const token = useMemo(() => (typeof window !== 'undefined' ? localStorage.getItem('ems_token') : null), []);
   
@@ -211,6 +251,10 @@ export default function AdminEnquiriesPage() {
         // Reset form
         const form = document.getElementById('addEnquiryForm') as HTMLFormElement;
         if (form) form.reset();
+        // Reset service selection states
+        setSelectedService('');
+        setSelectedSubService('');
+        setCustomService('');
         // Reload enquiries to get updated pagination
         loadEnquiries();
       } else if (response.status === 401 || response.status === 403) {
@@ -281,6 +325,21 @@ export default function AdminEnquiriesPage() {
       return;
     }
     
+    if (!selectedService) {
+      alert('Please select a service');
+      return;
+    }
+    
+    if (selectedService === 'Others' && !customService.trim()) {
+      alert('Please specify the service');
+      return;
+    }
+    
+    if (selectedService !== 'Others' && !selectedSubService) {
+      alert('Please select a sub-service');
+      return;
+    }
+    
     if (!enquiryDetails?.trim()) {
       alert('Enquiry details are required');
       return;
@@ -292,12 +351,22 @@ export default function AdminEnquiriesPage() {
       return;
     }
     
+    // Build service string
+    let serviceString = '';
+    if (selectedService === 'Others') {
+      serviceString = `Others: ${customService.trim()}`;
+    } else {
+      serviceString = `${selectedService} - ${selectedSubService}`;
+    }
+    
     const enquiryData = {
       visitorName: visitorName.trim(),
       phoneNumber: phoneNumber?.trim() || '',
       email: email?.trim() || '',
       enquiryType: enquiryType as 'chatbot' | 'email' | 'calls' | 'website',
-      enquiryDetails: enquiryDetails.trim()
+      enquiryDetails: `${serviceString}\n\n${enquiryDetails.trim()}`,
+      service: selectedService,
+      subService: selectedService === 'Others' ? customService.trim() : selectedSubService
     };
     
     console.log('Sending enquiry data:', enquiryData);
@@ -674,6 +743,59 @@ export default function AdminEnquiriesPage() {
                     </select>
                   </div>
                 </div>
+                
+                {/* Service Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Service *</label>
+                    <select
+                      value={selectedService}
+                      onChange={(e) => {
+                        setSelectedService(e.target.value);
+                        setSelectedSubService('');
+                        setCustomService('');
+                      }}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    >
+                      <option value="">Select service</option>
+                      {Object.keys(serviceMapping).map((service) => (
+                        <option key={service} value={service}>{service}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedService && selectedService !== 'Others' && (
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Sub-Service *</label>
+                      <select
+                        value={selectedSubService}
+                        onChange={(e) => setSelectedSubService(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                      >
+                        <option value="">Select sub-service</option>
+                        {serviceMapping[selectedService]?.map((subService) => (
+                          <option key={subService} value={subService}>{subService}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {selectedService === 'Others' && (
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Specify Service *</label>
+                      <input
+                        type="text"
+                        value={customService}
+                        onChange={(e) => setCustomService(e.target.value)}
+                        required
+                        placeholder="Enter custom service"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                      />
+                    </div>
+                  )}
+                </div>
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-black mb-1" style={{color: 'black'}}>Enquiry Details *</label>
                   <textarea
@@ -692,7 +814,13 @@ export default function AdminEnquiriesPage() {
                 <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
                   <button
                     type="button"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setSelectedService('');
+                      setSelectedSubService('');
+                      setCustomService('');
+                      setError(null);
+                    }}
                     className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     Cancel

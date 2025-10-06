@@ -3,14 +3,22 @@ import { connectMongo } from '@/lib/mongo';
 import User from '@/lib/models/User';
 import { createAuthenticatedHandler, requireAdmin } from '@/lib/middleware/auth';
 
-async function rejectUser(request: NextRequest, user: any, { params }: { params: { userId: string } }) {
+async function rejectUser(request: NextRequest, user: any, context?: { params: Promise<{ userId: string }> }) {
   try {
-    console.log('🔄 DELETE /api/auth/reject-user - Rejecting user:', params.userId);
-    
     await connectMongo();
     console.log('✅ Connected to MongoDB');
 
+    const params = await context?.params;
+    if (!params?.userId) {
+      return NextResponse.json({
+        success: false,
+        message: 'User ID is required'
+      }, { status: 400 });
+    }
+
     const { userId } = params;
+    console.log('🔄 DELETE /api/auth/reject-user - Rejecting user:', userId);
+    
     const body = await request.json().catch(() => ({}));
     const { reason } = body;
 

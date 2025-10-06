@@ -81,6 +81,7 @@ export default function AdminVisitorsPage() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -186,14 +187,22 @@ export default function AdminVisitorsPage() {
       
       if (agentsResponse.ok) {
         const agentsData = await agentsResponse.json();
-        setAgents(agentsData.users || []);
-        console.log('✅ Agents loaded:', agentsData.users?.length || 0);
+        // API returns 'agents' field, not 'users'
+        const agentsList = agentsData.agents || agentsData.users || [];
+        setAgents(agentsList);
+        console.log('✅ Agents loaded:', agentsList.length, agentsList);
+      } else {
+        console.error('❌ Failed to fetch agents:', agentsResponse.status, agentsResponse.statusText);
       }
       
       if (salesExecutivesResponse.ok) {
         const salesData = await salesExecutivesResponse.json();
-        setSalesExecutives(salesData.users || []);
-        console.log('✅ Sales executives loaded:', salesData.users?.length || 0);
+        // API returns 'salesExecutives' field, not 'users'
+        const salesList = salesData.salesExecutives || salesData.users || [];
+        setSalesExecutives(salesList);
+        console.log('✅ Sales executives loaded:', salesList.length, salesList);
+      } else {
+        console.error('❌ Failed to fetch sales executives:', salesExecutivesResponse.status, salesExecutivesResponse.statusText);
       }
     } catch (error) {
       console.error('❌ Failed to fetch agents:', error);
@@ -224,28 +233,30 @@ export default function AdminVisitorsPage() {
 
       if (response.ok) {
         const responseData = await response.json();
-        // Update the visitor in the local state
-        setVisitors(prev => prev.map(visitor => 
-          visitor._id === visitorId 
-            ? { 
-                ...visitor, 
-                salesExecutive: salesExecutiveId, 
-                salesExecutiveName: salesExecutiveName,
-                lastModifiedAt: new Date()
-              }
-            : visitor
-        ));
+        console.log('✅ API Response:', responseData);
+        
+        // Update the visitor in the local state with complete visitor object
+        if (responseData.visitor) {
+          setVisitors(prev => prev.map(visitor => 
+            visitor._id === visitorId 
+              ? { ...visitor, ...responseData.visitor }
+              : visitor
+          ));
+        }
         setAssigningSalesExecutive(null);
         
         // Show success notification
         console.log(`✅ Sales Executive ${salesExecutiveName} assigned to visitor ${visitorId}`);
-        setError(null); // Clear any previous errors
+        setSuccessMessage(`✅ Sales Executive "${salesExecutiveName}" assigned successfully!`);
+        setError(null);
         
-        // Force refresh data from server to ensure consistency
+        // Auto-hide success message
         setTimeout(() => {
-          console.log('🔄 Refreshing data after sales executive assignment...');
-          loadVisitors();
-        }, 1000);
+          setSuccessMessage(null);
+        }, 5000);
+        
+        // NO NEED for page reload - state already updated
+        console.log('✅ Local state updated, no page reload needed');
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(`Failed to assign sales executive: ${errorData.message || 'Unknown error'}`);
@@ -278,23 +289,31 @@ export default function AdminVisitorsPage() {
       });
       
       if (response.ok) {
-        // Update the visitor in the local state
-        setVisitors(prev => prev.map(visitor => 
-          visitor._id === visitorId 
-            ? { ...visitor, agent: agentName, agentName: agentName, assignedAgent: agentId }
-            : visitor
-        ));
+        const responseData = await response.json();
+        console.log('✅ API Response:', responseData);
+        
+        // Update the visitor in the local state with complete visitor object
+        if (responseData.visitor) {
+          setVisitors(prev => prev.map(visitor => 
+            visitor._id === visitorId 
+              ? { ...visitor, ...responseData.visitor }
+              : visitor
+          ));
+        }
         setAssigningAgent(null);
         
         // Show success notification
         console.log(`✅ Agent ${agentName} assigned to visitor ${visitorId}`);
-        setError(null); // Clear any previous errors
+        setSuccessMessage(`✅ Agent "${agentName}" assigned successfully!`);
+        setError(null);
         
-        // Force refresh data from server to ensure consistency
+        // Auto-hide success message
         setTimeout(() => {
-          console.log('🔄 Refreshing data after agent assignment...');
-          loadVisitors();
-        }, 1000);
+          setSuccessMessage(null);
+        }, 5000);
+        
+        // NO NEED for page reload - state already updated
+        console.log('✅ Local state updated, no page reload needed');
       } else {
         let errorData = {};
         try {
@@ -349,14 +368,31 @@ export default function AdminVisitorsPage() {
 
       if (response.ok) {
         const responseData = await response.json();
+        console.log('📊 Visitors API Response:', responseData);
+        
         const visitorsData = responseData.items || responseData.visitors || [];
+        console.log(`✅ Loaded ${visitorsData.length} visitors from API`);
+        
+        // Log first visitor to check data structure
+        if (visitorsData.length > 0) {
+          console.log('👤 Sample visitor data:', {
+            name: visitorsData[0].name,
+            agentName: visitorsData[0].agentName,
+            salesExecutiveName: visitorsData[0].salesExecutiveName,
+            assignedAgent: visitorsData[0].assignedAgent,
+            salesExecutive: visitorsData[0].salesExecutive
+          });
+        }
         
         setVisitors(visitorsData);
+        
+        // Handle pagination from response (can be nested or flat)
+        const totalCount = responseData.pagination?.total || responseData.total || 0;
         setPagination({
-          page: pagination.page,
-          limit: pagination.limit,
-          total: responseData.total || 0,
-          pages: Math.ceil((responseData.total || 0) / pagination.limit)
+          page: responseData.pagination?.page || pagination.page,
+          limit: responseData.pagination?.limit || pagination.limit,
+          total: totalCount,
+          pages: Math.ceil(totalCount / pagination.limit)
         });
       } else {
         throw new Error('API failed');
@@ -477,6 +513,7 @@ export default function AdminVisitorsPage() {
     try {
       setIsUpdating(true);
       setError(null); // Clear any previous errors
+      setSuccessMessage(null); // Clear any previous success messages
       
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -546,11 +583,13 @@ export default function AdminVisitorsPage() {
         
         // Show success message
         setError(null);
-        // Show success notification
+        setSuccessMessage('✅ Visitor details updated successfully!');
         console.log('✅ Visitor updated successfully and data refreshed from server');
         
-        // You could add a toast notification here
-        // For now, we'll just clear any existing errors
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 5000)
       } else {
         let errorMessage = 'Failed to update visitor details';
         try {
@@ -570,10 +609,12 @@ export default function AdminVisitorsPage() {
         
         console.error('Response status:', response.status);
         console.error('Response headers:', response.headers);
+        setSuccessMessage(null); // Clear any success message
         setError(errorMessage);
       }
     } catch (e) {
       console.error('Error updating visitor details:', e);
+      setSuccessMessage(null); // Clear any success message
       setError('Failed to update visitor details');
     } finally {
       setIsUpdating(false);
@@ -966,6 +1007,27 @@ export default function AdminVisitorsPage() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
                 {error}
+              </div>
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl shadow-sm animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  {successMessage}
+                </div>
+                <button 
+                  onClick={() => setSuccessMessage(null)}
+                  className="text-green-700 hover:text-green-900 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}
@@ -1415,98 +1477,98 @@ export default function AdminVisitorsPage() {
           </div>
 
           {/* Visitors Table */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
                     {visibleColumns['Sr.no.'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sr.no.
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Sr.No
                     </th>
                     )}
                     {visibleColumns['Name of Client'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name of Client
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Client Name
                       </th>
                     )}
                     {visibleColumns['Agent'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Agent
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Agent
                     </th>
                     )}
                     {visibleColumns['Sales Executive'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Sales Executive
                       </th>
                     )}
                     {visibleColumns['Status'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Status
                     </th>
                     )}
                     {visibleColumns['Date & Time'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Date & Time
                     </th>
                     )}
                     {visibleColumns['Service'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Service
                     </th>
                     )}
                     {visibleColumns['Sub-service'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Sub-service
                     </th>
                     )}
                     {visibleColumns['Enquiry Details'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Enquiry Details
                       </th>
                     )}
                     {visibleColumns['Source'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Source
                       </th>
                     )}
                     {visibleColumns['Contact no.'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact no.
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Contact
                       </th>
                     )}
                     {visibleColumns['Email id'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email id
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Email
                       </th>
                     )}
                     {visibleColumns['Organization'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Organization
                       </th>
                     )}
                     {visibleColumns['Region'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Region
                       </th>
                     )}
                     {visibleColumns['Comments'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Comments
                       </th>
                     )}
                     {visibleColumns['Amount'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Amount
                       </th>
                     )}
                     {visibleColumns['Converted'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Converted
                       </th>
                     )}
                     {visibleColumns['Actions'] && (
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
                     </th>
                     )}
@@ -1514,40 +1576,47 @@ export default function AdminVisitorsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                    {filteredVisitors.map((visitor, index) => (
-                    <tr key={visitor._id} className="hover:bg-gray-50">
+                    <tr key={visitor._id} className="hover:bg-blue-50 transition-colors duration-150">
                        {/* Sr.no. */}
                        {visibleColumns['Sr.no.'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {index + 1}
-                         </td>
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          {index + 1}
+                        </td>
                        )}
                        
                        {/* Name of Client */}
                        {visibleColumns['Name of Client'] && (
-                         <td className="px-3 py-4 whitespace-nowrap">
+                         <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-blue-600 font-medium text-sm">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 shadow-sm">
+                            <span className="text-white font-semibold text-sm">
                               {visitor.name ? visitor.name.charAt(0).toUpperCase() : visitor.email.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                            <div className="text-sm font-medium text-gray-900">{visitor.name || 'Anonymous'}</div>
+                            <div className="text-sm font-semibold text-gray-900">{visitor.name || 'Anonymous'}</div>
                         </div>
                       </td>
                        )}
                        
                        {/* Agent */}
                        {visibleColumns['Agent'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           <div className="flex items-center space-x-2">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm">
+                           <div className="space-y-2 min-w-[180px]">
                              {/* Display current agent name */}
-                             <span className="text-gray-900 font-medium min-w-0 flex-1">
-                               {visitor.agentName || 'Unassigned'}
-                             </span>
+                             <div className="text-gray-900 font-medium text-sm">
+                               {visitor.agentName ? (
+                                 visitor.agentName
+                               ) : (
+                                 <span className="text-gray-400 italic">Unassigned</span>
+                               )}
+                             </div>
                              {/* Assignment dropdown */}
                              <select
-                               className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm hover:border-gray-400 transition-colors"
                                value={visitor.assignedAgent || ''}
+                               onClick={() => {
+                                 console.log('📋 Agents dropdown clicked. Available agents:', agents.length, agents);
+                               }}
                                onChange={(e) => {
                                  const selectedAgent = agents.find(agent => (agent._id || agent.id) === e.target.value);
                                  if (selectedAgent) {
@@ -1566,39 +1635,40 @@ export default function AdminVisitorsPage() {
                                  }
                                }}
                              >
-                               <option value="">Unassigned</option>
+                               <option value="">Select Agent...</option>
                                {agents.length > 0 ? (
                                  agents.map(agent => (
                                    <option key={agent._id || agent.id} value={agent._id || agent.id}>
-                                     {agent.name || agent.username || 'Unknown Agent'}
+                                     {agent.displayName || agent.name || agent.username || 'Unknown Agent'}
                                    </option>
                                  ))
                                ) : (
-                                 <option value="" disabled>Loading agents...</option>
+                                 <option value="" disabled>⚠️ No agents available in database</option>
                                )}
                              </select>
                            </div>
-                           {/* Debug info - remove in production */}
-                           {process.env.NODE_ENV === 'development' && (
-                             <div className="text-xs text-gray-400 mt-1">
-                               Debug: Agent={visitor.agentName || 'null'}, AssignedID={visitor.assignedAgent || 'null'}
-                             </div>
-                           )}
                          </td>
                        )}
                        
                        {/* Sales Executive */}
                        {visibleColumns['Sales Executive'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           <div className="flex items-center space-x-2">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm">
+                           <div className="space-y-2 min-w-[180px]">
                              {/* Display current sales executive name */}
-                             <span className="text-gray-900 font-medium min-w-0 flex-1">
-                               {visitor.salesExecutiveName || 'Unassigned'}
-                             </span>
+                             <div className="text-gray-900 font-medium text-sm">
+                               {visitor.salesExecutiveName ? (
+                                 visitor.salesExecutiveName
+                               ) : (
+                                 <span className="text-gray-400 italic">Unassigned</span>
+                               )}
+                             </div>
                              {/* Assignment dropdown */}
                              <select
-                               className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm hover:border-gray-400 transition-colors"
                                value={visitor.salesExecutive || ''}
+                               onClick={() => {
+                                 console.log('📋 Sales Executives dropdown clicked. Available sales executives:', salesExecutives.length, salesExecutives);
+                               }}
                                onChange={(e) => {
                                  const selectedSalesExec = salesExecutives.find(exec => (exec._id || exec.id) === e.target.value);
                                  if (selectedSalesExec) {
@@ -1617,76 +1687,70 @@ export default function AdminVisitorsPage() {
                                  }
                                }}
                              >
-                               <option value="">Unassigned</option>
+                               <option value="">Select Sales Executive...</option>
                                {salesExecutives.length > 0 ? (
                                  salesExecutives.map(exec => (
                                    <option key={exec._id || exec.id} value={exec._id || exec.id}>
-                                     {exec.name || exec.username || 'Unknown Sales Executive'}
+                                     {exec.displayName || exec.name || exec.username || 'Unknown Sales Executive'}
                                    </option>
                                  ))
                                ) : (
-                                 <option value="" disabled>Loading sales executives...</option>
+                                 <option value="" disabled>⚠️ No sales executives available in database</option>
                                )}
                              </select>
                            </div>
-                           {/* Debug info - remove in production */}
-                           {process.env.NODE_ENV === 'development' && (
-                             <div className="text-xs text-gray-400 mt-1">
-                               Debug: SE={visitor.salesExecutiveName || 'null'}, SE_ID={visitor.salesExecutive || 'null'}
-                             </div>
-                           )}
                          </td>
                        )}
                        
                        {/* Status */}
                        {visibleColumns['Status'] && (
-                         <td className="px-3 py-4 whitespace-nowrap">
+                         <td className="px-4 py-4 whitespace-nowrap">
                         <button
                           onClick={() => {
                             setSelectedVisitor(visitor);
                             setShowPipeline(true);
                           }}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors shadow-sm"
                         >
-                          {visitor.status || 'Unknown'}
+                          {visitor.status?.replace(/_/g, ' ') || 'Unknown'}
                         </button>
                       </td>
                        )}
                        
                        {/* Date & Time */}
                        {visibleColumns['Date & Time'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                          {formatDate(visitor.createdAt)}
                        </td>
                        )}
                        
                        {/* Service */}
                        {visibleColumns['Service'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                          {getServiceDisplayName(visitor.service || 'General Inquiry')}
                        </td>
                        )}
                        
                        {/* Sub-service */}
                        {visibleColumns['Sub-service'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.subservice || '-'}
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                           {visitor.subservice || <span className="text-gray-400">-</span>}
                          </td>
                        )}
                        
                        {/* Enquiry Details */}
                        {visibleColumns['Enquiry Details'] && (
-                         <td className="px-3 py-4 text-sm text-gray-900 max-w-xs">
+                         <td className="px-4 py-4 text-sm text-gray-700 max-w-xs">
                            <div className="truncate" title={visitor.enquiryDetails || 'No details provided'}>
-                             {visitor.enquiryDetails || '-'}
+                             {visitor.enquiryDetails || <span className="text-gray-400">-</span>}
                            </div>
                          </td>
                        )}
                        
                        {/* Source */}
                        {visibleColumns['Source'] && (
-                         <td className="px-3 py-4 whitespace-nowrap">
-                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                         <td className="px-4 py-4 whitespace-nowrap">
+                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                              visitor.source === 'chatbot' ? 'bg-blue-100 text-blue-800' :
                              visitor.source === 'email' ? 'bg-green-100 text-green-800' :
                              visitor.source === 'calls' ? 'bg-purple-100 text-purple-800' :
@@ -1699,68 +1763,83 @@ export default function AdminVisitorsPage() {
                        
                        {/* Contact no. */}
                        {visibleColumns['Contact no.'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.phone || '-'}
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                           {visitor.phone || <span className="text-gray-400 font-sans">-</span>}
                          </td>
                        )}
                        
                        {/* Email id */}
                        {visibleColumns['Email id'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.email}
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                           <a href={`mailto:${visitor.email}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                             {visitor.email}
+                           </a>
                          </td>
                        )}
                        
                        {/* Organization */}
                        {visibleColumns['Organization'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.organization || '-'}
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                           {visitor.organization || <span className="text-gray-400">-</span>}
                          </td>
                        )}
                        
                        {/* Region */}
                        {visibleColumns['Region'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           {visitor.region || '-'}
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                           {visitor.region || <span className="text-gray-400">-</span>}
                          </td>
                        )}
                        
                        {/* Comments */}
                        {visibleColumns['Comments'] && (
-                         <td className="px-3 py-4 text-sm text-gray-900 max-w-xs">
+                         <td className="px-4 py-4 text-sm text-gray-700 max-w-xs">
                            <div className="truncate" title={visitor.comments || 'No comments'}>
-                             {visitor.comments || 'No comments'}
+                             {visitor.comments || <span className="text-gray-400 italic">No comments</span>}
                            </div>
                          </td>
                        )}
                        
                        {/* Amount */}
                        {visibleColumns['Amount'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
                            {visitor.amount ? `₹${visitor.amount.toLocaleString()}` : '-'}
                          </td>
                        )}
                        
                        {/* Converted */}
                        {visibleColumns['Converted'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                           <input
-                             type="checkbox"
-                             checked={isConverted(visitor.status)}
-                             readOnly
-                             className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                             title={`Converted: ${isConverted(visitor.status) ? 'Yes' : 'No'}`}
-                           />
+                         <td className="px-4 py-4 whitespace-nowrap text-center">
+                           <div className="flex items-center justify-center">
+                             {isConverted(visitor.status) ? (
+                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                 </svg>
+                                 Yes
+                               </span>
+                             ) : (
+                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                 </svg>
+                                 No
+                               </span>
+                             )}
+                           </div>
                          </td>
                        )}
                        
                        {/* Actions */}
                        {visibleColumns['Actions'] && (
-                         <td className="px-3 py-4 whitespace-nowrap text-sm font-medium">
+                         <td className="px-4 py-4 whitespace-nowrap text-sm">
                         <button
                              onClick={() => initializeEditForm(visitor)}
-                             className="text-blue-600 hover:text-blue-900"
+                             className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
                         >
+                          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
                           Edit
                         </button>
                       </td>
@@ -1772,9 +1851,17 @@ export default function AdminVisitorsPage() {
             </div>
           </div>
 
-          {filteredVisitors.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-500">No visitors found</div>
+          {filteredVisitors.length === 0 && !loading && (
+            <div className="text-center py-16 bg-white rounded-lg shadow border border-gray-200 mt-6">
+              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No visitors found</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                {(searchTerm || filters.status || filters.timePeriod !== 'all') 
+                  ? 'Try adjusting your filters or search criteria' 
+                  : 'No visitor data is available at the moment'}
+              </p>
             </div>
           )}
         </div>

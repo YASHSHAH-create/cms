@@ -19,8 +19,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Use the fully dynamic login endpoint - NO HARDCODED DATA
-      const response = await fetch('/api/auth/fully-dynamic-login', {
+      // Use the login endpoint
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden">
         <div className="bg-[#2d4891] p-6 flex items-center justify-center">
-          <Image src="/envirocare-logo.png" alt="Envirocare Labs" width={220} height={56} />
+          <Image src="/envirocare-logo.png" alt="Envirocare Labs" width={220} height={56} style={{ height: 'auto' }} />
         </div>
         <div className="bg-green-600 text-white text-center py-4 text-xl font-semibold">Login</div>
 

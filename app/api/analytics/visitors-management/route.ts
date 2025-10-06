@@ -86,36 +86,49 @@ async function getVisitorsManagement(request: NextRequest, user: any) {
     ]);
 
     // Transform visitors data for frontend
-    const transformedVisitors = visitors.map(v => ({
-      _id: v._id.toString(),
-      name: v.name || '',
-      email: v.email || '',
-      phone: v.phone || '',
-      organization: v.organization || '',
-      region: v.region || '',
-      service: v.service || 'General Inquiry',
-      subservice: v.subservice || '',
-      enquiryDetails: v.enquiryDetails || '',
-      source: v.source || 'chatbot',
-      createdAt: v.createdAt,
-      lastInteractionAt: v.lastInteractionAt,
-      isConverted: v.isConverted || false,
-      status: v.status || 'enquiry_required',
-      agent: v.agent || '',
-      agentName: v.agentName || '',
-      assignedAgent: v.assignedAgent || null,
-      salesExecutive: v.salesExecutive || null,
-      salesExecutiveName: v.salesExecutiveName || '',
-      customerExecutive: v.customerExecutive || null,
-      customerExecutiveName: v.customerExecutiveName || '',
-      comments: v.comments || '',
-      amount: v.amount || 0,
-      pipelineHistory: v.pipelineHistory || [],
-      version: v.version || 1,
-      lastModifiedBy: v.lastModifiedBy || '',
-      lastModifiedAt: v.lastModifiedAt || v.updatedAt,
-      assignmentHistory: v.assignmentHistory || []
-    }));
+    const transformedVisitors = visitors.map(v => {
+      // Debug log for first visitor to check data
+      if (visitors.indexOf(v) === 0) {
+        console.log('🔍 First visitor raw data:', {
+          _id: v._id,
+          agentName: v.agentName,
+          salesExecutiveName: v.salesExecutiveName,
+          assignedAgent: v.assignedAgent,
+          salesExecutive: v.salesExecutive
+        });
+      }
+      
+      return {
+        _id: v._id.toString(),
+        name: v.name || '',
+        email: v.email || '',
+        phone: v.phone || '',
+        organization: v.organization || '',
+        region: v.region || '',
+        service: v.service || 'General Inquiry',
+        subservice: v.subservice || '',
+        enquiryDetails: v.enquiryDetails || '',
+        source: v.source || 'chatbot',
+        createdAt: v.createdAt,
+        lastInteractionAt: v.lastInteractionAt,
+        isConverted: v.isConverted || false,
+        status: v.status || 'enquiry_required',
+        agent: v.agent || '',
+        agentName: v.agentName || '',
+        assignedAgent: v.assignedAgent ? v.assignedAgent.toString() : null,
+        salesExecutive: v.salesExecutive ? v.salesExecutive.toString() : null,
+        salesExecutiveName: v.salesExecutiveName || '',
+        customerExecutive: v.customerExecutive || null,
+        customerExecutiveName: v.customerExecutiveName || '',
+        comments: v.comments || '',
+        amount: v.amount || 0,
+        pipelineHistory: v.pipelineHistory || [],
+        version: v.version || 1,
+        lastModifiedBy: v.lastModifiedBy || '',
+        lastModifiedAt: v.lastModifiedAt || v.updatedAt,
+        assignmentHistory: v.assignmentHistory || []
+      };
+    });
 
     const response = NextResponse.json({
       visitors: transformedVisitors,

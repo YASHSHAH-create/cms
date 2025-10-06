@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectMongo } from '@/lib/mongo';
 import User from '@/lib/models/User';
+import { corsHeaders } from '@/lib/cors';
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         message: 'Username, password, name, and email are required' 
-      }, { status: 400 });
+      }, { status: 400, headers: corsHeaders });
     }
 
     // Validate role
@@ -31,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         message: 'Invalid role. Must be sales-executive or customer-executive' 
-      }, { status: 400 });
+      }, { status: 400, headers: corsHeaders });
     }
 
     // Check if user already exists
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         message: 'Username or email already exists' 
-      }, { status: 400 });
+      }, { status: 400, headers: corsHeaders });
     }
 
     // Create new user with approval workflow
@@ -80,13 +86,13 @@ export async function POST(request: NextRequest) {
         role: newUser.role,
         isApproved: newUser.isApproved
       }
-    }, { status: 201 });
+    }, { status: 201, headers: corsHeaders });
 
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json({ 
       success: false, 
       message: 'Server error during registration' 
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }

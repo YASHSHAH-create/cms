@@ -3,6 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectMongo } from '@/lib/mongo';
 import User from '@/lib/models/User';
+import { corsHeaders } from '@/lib/cors';
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         message: 'Username and password are required' 
-      }, { status: 400 });
+      }, { status: 400, headers: corsHeaders });
     }
 
     console.log(`👤 Login attempt for: ${username}`);
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Invalid credentials' 
-        }, { status: 401 });
+        }, { status: 401, headers: corsHeaders });
       }
 
       // Check password
@@ -43,7 +49,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Invalid credentials' 
-        }, { status: 401 });
+        }, { status: 401, headers: corsHeaders });
       }
 
       // Check if user is approved (for non-admin users)
@@ -51,7 +57,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Your account is pending admin approval. Please contact the administrator.' 
-        }, { status: 403 });
+        }, { status: 403, headers: corsHeaders });
       }
 
       // Check if account is active
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Your account has been deactivated. Please contact the administrator.' 
-        }, { status: 403 });
+        }, { status: 403, headers: corsHeaders });
       }
 
       // Update last login time
@@ -91,7 +97,7 @@ export async function POST(request: NextRequest) {
           role: user.role,
           email: user.email
         }
-      });
+      }, { headers: corsHeaders });
 
     } catch (mongoError) {
       console.log('⚠️ MongoDB connection failed, using mock authentication');
@@ -136,7 +142,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Invalid credentials' 
-        }, { status: 401 });
+        }, { status: 401, headers: corsHeaders });
       }
 
       // Check password (plain text for mock)
@@ -145,7 +151,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: false, 
           message: 'Invalid credentials' 
-        }, { status: 401 });
+        }, { status: 401, headers: corsHeaders });
       }
 
       console.log(`✅ Mock login successful: ${user.name} (${user.role})`);
@@ -178,7 +184,7 @@ export async function POST(request: NextRequest) {
           isApproved: user.isApproved,
           isActive: user.isActive
         }
-      });
+      }, { headers: corsHeaders });
     }
 
   } catch (error) {
@@ -186,6 +192,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: false, 
       message: 'Server error during login' 
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }

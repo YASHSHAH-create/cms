@@ -53,7 +53,7 @@ export async function authenticateToken(request: NextRequest): Promise<Authentic
   // Optionally verify user still exists in database
   try {
     await connectMongo();
-    const dbUser = await User.findById(user.userId).select('-password').lean();
+    const dbUser: any = await User.findById(user.userId).select('-password').lean();
     if (!dbUser || !dbUser.isActive) {
       return null;
     }
@@ -91,10 +91,10 @@ export const requireCustomerExecutive = (user: AuthenticatedUser | null): boolea
 
 // Create authenticated request handler
 export function createAuthenticatedHandler(
-  handler: (request: NextRequest, user: AuthenticatedUser) => Promise<Response>,
+  handler: (request: NextRequest, user: AuthenticatedUser, context?: any) => Promise<Response>,
   requiredRole?: (user: AuthenticatedUser | null) => boolean
 ) {
-  return async (request: NextRequest): Promise<Response> => {
+  return async (request: NextRequest, context?: any): Promise<Response> => {
     try {
       const user = await authenticateToken(request);
       
@@ -112,7 +112,7 @@ export function createAuthenticatedHandler(
         );
       }
 
-      return await handler(request, user);
+      return await handler(request, user, context);
     } catch (error) {
       console.error('Authentication error:', error);
       return new Response(
