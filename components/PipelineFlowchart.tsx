@@ -138,15 +138,19 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
         }
       });
       
-      // Get all stages that have been reached (from pipeline history + current status)
-      const reachedStages = new Set<string>();
-      stageMap.forEach((entry) => reachedStages.add(entry.status));
-      if (currentStatus) {
-        reachedStages.add(currentStatus);
-      }
+      // Get current stage index
+      const currentStageIndex = PIPELINE_STAGES.findIndex(stage => stage.id === currentStatus);
       
-      // Filter pipeline stages to only include those that have been reached
-      const reachedPipelineStages = PIPELINE_STAGES.filter(stage => reachedStages.has(stage.id));
+      // Get all stages that should be shown (all stages up to and including current stage)
+      const reachedPipelineStages = currentStageIndex >= 0 
+        ? PIPELINE_STAGES.slice(0, currentStageIndex + 1)
+        : PIPELINE_STAGES.filter(stage => {
+            // Fallback: if currentStatus not found in PIPELINE_STAGES, show stages from history
+            const reachedStages = new Set<string>();
+            stageMap.forEach((entry) => reachedStages.add(entry.status));
+            if (currentStatus) reachedStages.add(currentStatus);
+            return reachedStages.has(stage.id);
+          });
       
       console.log('Pipeline stages that have been reached (in sequence):', reachedPipelineStages);
       
@@ -189,19 +193,24 @@ export default function PipelineFlowchart({ currentStatus, onStatusChange, class
       });
       
     } else if (currentStatus) {
-      // No pipeline history, create initial entry for current status
-      const currentStage = PIPELINE_STAGES.find(s => s.id === currentStatus);
-      if (currentStage) {
-        console.log('Creating initial stage history entry for:', currentStatus);
-        stageHistoryEntries = [{
-          id: `stage_${currentStatus}_0`,
-          stageId: currentStatus,
-          stageName: currentStage.name,
+      // No pipeline history, create entries for all stages up to current status
+      const currentStageIndex = PIPELINE_STAGES.findIndex(s => s.id === currentStatus);
+      if (currentStageIndex >= 0) {
+        console.log('Creating stage history for all stages up to:', currentStatus, 'index:', currentStageIndex);
+        
+        // Create entries for all stages from 0 to currentStageIndex
+        stageHistoryEntries = PIPELINE_STAGES.slice(0, currentStageIndex + 1).map((stage, index) => ({
+          id: `stage_${stage.id}_${index}`,
+          stageId: stage.id,
+          stageName: stage.name,
           timestamp: new Date(),
-          previousStage: undefined,
-          executiveNotes: 'Initial status',
-          isEditable: true
-        }];
+          previousStage: index > 0 ? PIPELINE_STAGES[index - 1].id : undefined,
+          executiveNotes: stage.id === currentStatus ? 'Current status' : 'Stage completed',
+          isEditable: true,
+          isAutoFilled: stage.id !== currentStatus // Mark auto-filled except current
+        }));
+        
+        console.log('Created stage history for', stageHistoryEntries.length, 'stages');
       }
     }
     
