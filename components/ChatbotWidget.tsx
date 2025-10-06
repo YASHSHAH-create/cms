@@ -390,7 +390,11 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
   async function upsertVisitor(data: VisitorData): Promise<string> {
     setIsLoading(true);
     try {
-      console.log(`👤 Creating/updating visitor:`, { name: data.name, email: data.email });
+      // Get service and subservice from localStorage
+      const service = localStorage.getItem('envirocareCurrentService') || 'General Inquiry';
+      const subservice = localStorage.getItem('envirocareCurrentSubservice') || '';
+      
+      console.log(`👤 Creating/updating visitor:`, { name: data.name, email: data.email, service, subservice });
       
       const res = await fetch(`${API_BASE}/api/visitors`, {
         method: 'POST',
@@ -399,6 +403,8 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
           name: data.name,
           email: data.email,
           phone: data.phone,
+          service: service,
+          subservice: subservice,
           source: 'chatbot',
           meta: { widget: 'site', consent: true }
         })

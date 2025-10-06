@@ -60,65 +60,19 @@ export function mapToMainService(service: string): string {
   return 'General Testing';
 }
 
-// Get all available main services
+// Get all available main services (matching enquiry form)
 export function getMainServices(): string[] {
   return [
+    'Food Testing',
     'Water Testing',
     'Environmental Testing',
-    'Food Testing',
-    'Chemical Testing',
-    'Microbiology',
-    'General Testing'
+    'Others'
   ];
 }
 
 // Get sub-services for a main service
 export function getSubServices(mainService: string): string[] {
-  const subServiceMap: { [key: string]: string[] } = {
-    'Water Testing': [
-      'Drinking Water Testing',
-      'Groundwater Testing',
-      'Surface Water Testing',
-      'Wastewater Testing',
-      'Swimming Pool Water Testing'
-    ],
-    'Environmental Testing': [
-      'Soil Testing',
-      'Air Quality Testing',
-      'Noise Testing',
-      'Waste Testing',
-      'Environmental Impact Assessment'
-    ],
-    'Food Testing': [
-      'Food Safety Testing',
-      'Nutritional Analysis',
-      'Food Quality Testing',
-      'Pesticide Residue Testing',
-      'Food Allergen Testing'
-    ],
-    'Chemical Testing': [
-      'Chemical Analysis',
-      'Pesticide Testing',
-      'Heavy Metals Testing',
-      'Organic Compound Analysis',
-      'Inorganic Analysis'
-    ],
-    'Microbiology': [
-      'Bacterial Testing',
-      'Pathogen Testing',
-      'Microbial Analysis',
-      'Yeast and Mold Testing',
-      'Antibiotic Residue Testing'
-    ],
-    'General Testing': [
-      'General Laboratory Services',
-      'Quality Control Testing',
-      'Research and Development',
-      'Custom Testing Services'
-    ]
-  };
-
-  return subServiceMap[mainService] || [];
+  return SERVICE_SUBSERVICE_MAP[mainService] || [];
 }
 
 // Get service display name (alias for mapToMainService)
@@ -126,47 +80,35 @@ export function getServiceDisplayName(service: string): string {
   return mapToMainService(service);
 }
 
-// Service to sub-service mapping
+// Service to sub-service mapping (matching enquiry form)
 export const SERVICE_SUBSERVICE_MAP: { [key: string]: string[] } = {
+  'Food Testing': [
+    'Microbiological Testing',
+    'Chemical Testing',
+    'Nutritional Analysis',
+    'Pesticide Residue Testing',
+    'Heavy Metal Testing',
+    'Allergen Testing',
+    'Shelf Life Studies',
+    'GMO Testing'
+  ],
   'Water Testing': [
-    'Drinking Water Testing',
+    'Drinking Water Analysis',
+    'Industrial Wastewater Testing',
     'Groundwater Testing',
     'Surface Water Testing',
-    'Wastewater Testing',
-    'Swimming Pool Water Testing'
+    'Swimming Pool Water Testing',
+    'Packaged Drinking Water Testing',
+    'Effluent Testing',
+    'Seawater Testing'
   ],
   'Environmental Testing': [
+    'Air Quality Monitoring',
     'Soil Testing',
-    'Air Quality Testing',
-    'Noise Testing',
-    'Waste Testing',
-    'Environmental Impact Assessment'
+    'Noise Level Monitoring',
+    'Stack Emission Testing',
+    'Ambient Air Quality',
+    'Indoor Air Quality'
   ],
-  'Food Testing': [
-    'Food Safety Testing',
-    'Nutritional Analysis',
-    'Food Quality Testing',
-    'Pesticide Residue Testing',
-    'Food Allergen Testing'
-  ],
-  'Chemical Testing': [
-    'Chemical Analysis',
-    'Pesticide Testing',
-    'Heavy Metals Testing',
-    'Organic Compound Analysis',
-    'Inorganic Analysis'
-  ],
-  'Microbiology': [
-    'Bacterial Testing',
-    'Pathogen Testing',
-    'Microbial Analysis',
-    'Yeast and Mold Testing',
-    'Antibiotic Residue Testing'
-  ],
-  'General Testing': [
-    'General Laboratory Services',
-    'Quality Control Testing',
-    'Research and Development',
-    'Custom Testing Services'
-  ]
+  'Others': []
 };

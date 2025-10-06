@@ -889,7 +889,8 @@ export default function AdminVisitorsPage() {
     setSelectedService(service);
     setSelectedSubservice('');
     setCustomSubservice('');
-    setShowCustomSubservice(false);
+    // For "Others", we directly use custom input
+    setShowCustomSubservice(service === 'Others');
   };
 
   // Handle subservice selection
@@ -1981,6 +1982,18 @@ export default function AdminVisitorsPage() {
                     setError('Service is required');
                     return;
                   }
+                  
+                  // For "Others", validate custom service input
+                  if (selectedService === 'Others' && (!customSubservice || customSubservice.trim() === '')) {
+                    setError('Please specify the service');
+                    return;
+                  }
+                  
+                  // For other services, validate sub-service selection
+                  if (selectedService !== 'Others' && !selectedSubservice && !showCustomSubservice) {
+                    setError('Please select a sub-service');
+                    return;
+                  }
                  
                   // Determine the final subservice value
                   const finalSubservice = showCustomSubservice ? customSubservice : selectedSubservice;
@@ -2237,8 +2250,19 @@ export default function AdminVisitorsPage() {
 
                    {/* Sub-service */}
                    <div>
-                     <label className="block text-sm font-medium text-black mb-1">Sub-service</label>
-                     {selectedService ? (
+                     <label className="block text-sm font-medium text-black mb-1">
+                       {selectedService === 'Others' ? 'Specify Service *' : 'Sub-service'}
+                     </label>
+                     {selectedService === 'Others' ? (
+                       <input
+                         type="text"
+                         value={customSubservice}
+                         onChange={(e) => setCustomSubservice(e.target.value)}
+                         required
+                         placeholder="Enter custom service"
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                       />
+                     ) : selectedService ? (
                        <div>
                          <select
                            value={showCustomSubservice ? 'custom' : selectedSubservice}

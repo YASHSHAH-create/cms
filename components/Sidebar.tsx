@@ -93,7 +93,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 sm:w-72 bg-[#2d4891] transform transition-transform duration-300 ease-in-out md:hidden mobile-sidebar shadow-2xl ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 sm:w-72 bg-[#2d4891] dark:bg-gray-900 transform transition-transform duration-300 ease-in-out md:hidden mobile-sidebar shadow-2xl ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ maxHeight: '100vh', overflow: 'hidden' }}
@@ -144,7 +144,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
   // Desktop sidebar component
   const DesktopSidebar = () => (
     <div
-      className={`hidden md:flex flex-col h-screen bg-[#2d4891] text-white transition-all duration-300 ease-in-out shadow-2xl
+      className={`hidden md:flex flex-col h-screen bg-[#2d4891] dark:bg-gray-900 text-white transition-all duration-300 ease-in-out shadow-2xl border-r border-gray-200 dark:border-gray-800
                 ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
       {/* Header with minimize button */}

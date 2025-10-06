@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
+import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 
 export const metadata: Metadata = {
   title: "Assessment | Envirocare Labs",
@@ -22,9 +23,11 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
