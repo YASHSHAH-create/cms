@@ -421,13 +421,14 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
         }
       }
       
-      if (!out.ok || !out.visitorId) {
+      // Check for correct response format: {success: true, visitor: {_id: ...}}
+      if (!out.success || !out.visitor || !out.visitor._id) {
         console.error(`❌ Invalid visitor creation response:`, out);
         throw new Error(out.message || 'Failed to save visitor');
       }
       
-      console.log(`✅ Visitor created/updated successfully with ID: ${out.visitorId}`);
-      return out.visitorId as string;
+      console.log(`✅ Visitor created/updated successfully with ID: ${out.visitor._id}`);
+      return out.visitor._id as string;
     } catch (error) {
       console.error(`❌ Error creating/updating visitor:`, error);
       throw error;
@@ -476,7 +477,7 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
   }
 
 
-  async function createEnquiry(visitorData: { name: string; email: string; phone: string; organization?: string; region?: string }, service: string, enquiryDetails: string): Promise<void> {
+  async function createEnquiry(visitorData: { name: string; email: string; phone: string; organization?: string; region?: string; location?: string }, service: string, enquiryDetails: string): Promise<void> {
     try {
       const subservice = localStorage.getItem('envirocareCurrentSubservice') || '';
       const res = await fetch(`${API_BASE}/api/analytics/chatbot-enquiry`, {
