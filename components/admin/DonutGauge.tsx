@@ -13,26 +13,21 @@ export default function DonutGauge({ value, label = "Conversion Rate", height = 
   const normalizedValue = pct / 100;
   
   const data = [
-    { name: 'Converted', value: normalizedValue, color: '#64aa53' },
-    { name: 'Not Converted', value: 1 - normalizedValue, color: '#e2e8f0' }
+    { name: 'Converted', value: normalizedValue, color: '#22c55e' },
+    { name: 'Not Converted', value: 1 - normalizedValue, color: '#e5e7eb' }
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">{label}</h3>
-        <p className="text-sm text-slate-600">Overall performance</p>
-      </div>
-      
-      <div style={{ height }} className="relative">
+    <div className="w-full">
+      <div style={{ height: height + 40 }} className="relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={80}
+              innerRadius={70}
+              outerRadius={95}
               startAngle={90}
               endAngle={450}
               dataKey="value"
@@ -47,24 +42,24 @@ export default function DonutGauge({ value, label = "Conversion Rate", height = 
         {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-xl font-bold text-slate-900">
+            <div className="text-4xl font-bold text-gray-900 dark:text-white mb-1">
               {pct}%
             </div>
-            <div className="text-xs text-slate-500">
-              converted
+            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              Converted
             </div>
           </div>
         </div>
       </div>
       
-      <div className="mt-4 flex items-center justify-center space-x-4 text-xs">
+      <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
         <div className="flex items-center">
           <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-          <span className="text-slate-600">Converted</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium">Converted</span>
         </div>
         <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-slate-200 mr-2"></div>
-          <span className="text-slate-600">Not Converted</span>
+          <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 mr-2"></div>
+          <span className="text-gray-700 dark:text-gray-300 font-medium">Remaining</span>
         </div>
       </div>
     </div>

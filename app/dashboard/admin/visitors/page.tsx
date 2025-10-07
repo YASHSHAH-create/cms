@@ -98,6 +98,9 @@ export default function AdminVisitorsPage() {
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [showTimeFilter, setShowTimeFilter] = useState(false);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [subserviceError, setSubserviceError] = useState<string>('');
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState({
@@ -564,6 +567,7 @@ export default function AdminVisitorsPage() {
         setSelectedSubservice('');
         setCustomSubservice('');
         setShowCustomSubservice(false);
+        setSubserviceError('');
         setFormData({
           name: '',
           email: '',
@@ -884,17 +888,49 @@ export default function AdminVisitorsPage() {
     });
   };
 
+  // Fetch chat messages for a visitor
+  const fetchChatMessages = async (visitorId: string) => {
+    setLoadingMessages(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/chat/${visitorId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ok && data.messages) {
+          setChatMessages(data.messages);
+        } else {
+          setChatMessages([]);
+        }
+      } else {
+        console.error('Failed to fetch chat messages');
+        setChatMessages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      setChatMessages([]);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
   // Handle service selection
   const handleServiceChange = (service: string) => {
     setSelectedService(service);
     setSelectedSubservice('');
     setCustomSubservice('');
+    setSubserviceError('');
     // For "Others", we directly use custom input
     setShowCustomSubservice(service === 'Others');
   };
 
   // Handle subservice selection
   const handleSubserviceChange = (subservice: string) => {
+    setSubserviceError('');
     if (subservice === 'custom') {
       setShowCustomSubservice(true);
       setSelectedSubservice('');
@@ -1710,6 +1746,7 @@ export default function AdminVisitorsPage() {
                           onClick={() => {
                             setSelectedVisitor(visitor);
                             setShowPipeline(true);
+                            fetchChatMessages(visitor._id);
                           }}
                           className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors shadow-sm"
                         >
@@ -1899,6 +1936,78 @@ export default function AdminVisitorsPage() {
                                />
                              </div>
 
+                             {/* Chat Messages Section */}
+                             <div className="mb-6 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl border-2 border-gray-200 shadow-lg p-6">
+                               <div className="flex items-center justify-between mb-4">
+                                 <div>
+                                   <h4 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                     <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                       </svg>
+                                     </div>
+                                     Chat Conversation
+                                   </h4>
+                                   <p className="text-sm text-gray-600 mt-1">Complete conversation history with the visitor</p>
+                                 </div>
+                                 <div className="text-right">
+                                   <div className="text-2xl font-bold text-blue-600">{chatMessages.length}</div>
+                                   <div className="text-xs text-gray-600">Messages</div>
+                                 </div>
+                               </div>
+
+                               {loadingMessages ? (
+                                 <div className="text-center py-8">
+                                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                   <p className="mt-2 text-gray-600">Loading messages...</p>
+                                 </div>
+                               ) : chatMessages.length > 0 ? (
+                                 <div className="bg-white rounded-lg border border-gray-300 p-4 max-h-96 overflow-y-auto space-y-3">
+                                   {chatMessages.map((msg, index) => (
+                                     <div
+                                       key={msg._id || index}
+                                       className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                     >
+                                       <div
+                                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${
+                                           msg.sender === 'user'
+                                             ? 'bg-blue-600 text-white'
+                                             : 'bg-gray-200 text-gray-900'
+                                         }`}
+                                       >
+                                         <div className="flex items-center gap-2 mb-1">
+                                           <span className="text-xs font-semibold">
+                                             {msg.sender === 'user' ? 'Visitor' : 'Bot/Agent'}
+                                           </span>
+                                         </div>
+                                         <p className="text-sm">{msg.message}</p>
+                                         <p className={`text-xs mt-1 ${
+                                           msg.sender === 'user' ? 'text-blue-100' : 'text-gray-600'
+                                         }`}>
+                                           {msg.at ? new Date(msg.at).toLocaleString('en-US', {
+                                             month: 'short',
+                                             day: 'numeric',
+                                             hour: '2-digit',
+                                             minute: '2-digit'
+                                           }) : ''}
+                                         </p>
+                                       </div>
+                                     </div>
+                                   ))}
+                                 </div>
+                               ) : (
+                                 <div className="text-center py-8 bg-white rounded-lg border border-gray-300">
+                                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                     </svg>
+                                   </div>
+                                   <p className="text-gray-600 font-medium">No conversation history</p>
+                                   <p className="text-sm text-gray-500 mt-1">This visitor hasn't had any chat interactions yet</p>
+                                 </div>
+                               )}
+                             </div>
+
                              {/* Action Buttons */}
                              <div className="mt-8 flex justify-end space-x-4">
                                <button
@@ -1937,6 +2046,7 @@ export default function AdminVisitorsPage() {
                      setSelectedSubservice('');
                      setCustomSubservice('');
                      setShowCustomSubservice(false);
+                     setSubserviceError('');
                      setFormData({
                        name: '',
                        email: '',
@@ -1985,13 +2095,13 @@ export default function AdminVisitorsPage() {
                   
                   // For "Others", validate custom service input
                   if (selectedService === 'Others' && (!customSubservice || customSubservice.trim() === '')) {
-                    setError('Please specify the service');
+                    setSubserviceError('Please specify the service');
                     return;
                   }
                   
                   // For other services, validate sub-service selection
                   if (selectedService !== 'Others' && !selectedSubservice && !showCustomSubservice) {
-                    setError('Please select a sub-service');
+                    setSubserviceError('Please select a sub-service');
                     return;
                   }
                  
@@ -2000,7 +2110,7 @@ export default function AdminVisitorsPage() {
                   
                   // Validate custom subservice
                   if (showCustomSubservice && (!customSubservice || customSubservice.trim() === '')) {
-                    setError('Please enter a custom sub-service name');
+                    setSubserviceError('Please enter a custom sub-service name');
                     return;
                   }
                   
@@ -2257,17 +2367,20 @@ export default function AdminVisitorsPage() {
                        <input
                          type="text"
                          value={customSubservice}
-                         onChange={(e) => setCustomSubservice(e.target.value)}
+                         onChange={(e) => {
+                           setCustomSubservice(e.target.value);
+                           setSubserviceError('');
+                         }}
                          required
                          placeholder="Enter custom service"
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black ${subserviceError ? 'border-red-500' : 'border-gray-300'}`}
                        />
                      ) : selectedService ? (
                        <div>
                          <select
                            value={showCustomSubservice ? 'custom' : selectedSubservice}
                            onChange={(e) => handleSubserviceChange(e.target.value)}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black ${subserviceError ? 'border-red-500' : 'border-gray-300'}`}
                          >
                            <option value="">Select Sub-service</option>
                            {SERVICE_SUBSERVICE_MAP[selectedService]?.map(subservice => (
@@ -2280,9 +2393,12 @@ export default function AdminVisitorsPage() {
                            <input
                              type="text"
                              value={customSubservice}
-                             onChange={(e) => setCustomSubservice(e.target.value)}
+                             onChange={(e) => {
+                               setCustomSubservice(e.target.value);
+                               setSubserviceError('');
+                             }}
                              placeholder="Enter custom sub-service"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2 text-black"
+                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2 text-black ${subserviceError ? 'border-red-500' : 'border-gray-300'}`}
                            />
                          )}
                        </div>
@@ -2290,6 +2406,9 @@ export default function AdminVisitorsPage() {
                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-black">
                          Please select a service first
                        </div>
+                     )}
+                     {subserviceError && (
+                       <p className="mt-1 text-sm text-red-600">{subserviceError}</p>
                      )}
                    </div>
                    

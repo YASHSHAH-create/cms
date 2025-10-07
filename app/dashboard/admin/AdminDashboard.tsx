@@ -257,37 +257,56 @@ export default function AdminDashboard() {
             </div>
 
               {/* Charts Row */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
-                <div className="xl:col-span-8">
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 transition-colors">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Visitors (7 Days)</h3>
-                    <TimeseriesLine data={dailyData} height={250} />
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                {/* Daily Visitors Chart */}
+                <div className="xl:col-span-2 flex">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 w-full flex flex-col" style={{ minHeight: '480px' }}>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Daily Visitors</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Last 7 days trend</p>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Live Data</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex items-center">
+                      <TimeseriesLine data={dailyData} height={340} />
+                    </div>
                   </div>
                 </div>
-                <div className="xl:col-span-4">
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 transition-colors">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Conversion Rate</h3>
-                    <DonutGauge
-                      value={summary?.conversionRate || 0}
-                      label="Converted"
-                      height={250}
-                    />
+                
+                {/* Conversion Rate Gauge */}
+                <div className="xl:col-span-1 flex">
+                  <div className="bg-gradient-to-br from-white to-green-50/30 dark:from-gray-800 dark:to-green-900/10 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 w-full flex flex-col" style={{ minHeight: '480px' }}>
+                    <div className="mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Conversion Rate</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Overall performance</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <DonutGauge
+                        value={summary?.conversionRate || 0}
+                        label="Converted"
+                        height={240}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Recent Activity Row */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <div className="xl:col-span-8">
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 transition-colors">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="xl:col-span-2">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
                     <RecentList 
                       items={recentItems} 
                       title="Recent Visitors" 
                     />
                   </div>
                 </div>
-                <div className="xl:col-span-4">
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6 transition-colors">
+                <div className="xl:col-span-1">
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
                     <RecentList 
                       items={activeItems} 
                       title="Active Conversations" 
