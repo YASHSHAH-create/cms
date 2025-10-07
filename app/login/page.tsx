@@ -54,7 +54,7 @@ export default function LoginPage() {
       // More detailed error handling
       if (err instanceof TypeError && err.message.includes('fetch')) {
         setError('Network error. Please check your connection.');
-      } else if (err.message) {
+      } else if (err instanceof Error && err.message) {
         setError(`Error: ${err.message}`);
       } else {
         setError('Server error. Please try again.');

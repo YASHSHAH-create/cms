@@ -52,6 +52,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
     { href: '/dashboard/admin/analytics', label: 'Analytics', icon: '📈' },
     { href: '/dashboard/admin/chats', label: 'Chat History', icon: '💬' },
     { href: '/dashboard/admin/enquiries', label: 'Enquiries', icon: '📋' },
+    { href: '/dashboard/admin/quotations', label: 'Quotations', icon: '📄' },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: '⚙️' },
   ];
 
