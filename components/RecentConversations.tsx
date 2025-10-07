@@ -76,7 +76,13 @@ export default function RecentConversations({ conversations }: RecentConversatio
           <span className="text-sm text-gray-500">{conversations.length} visitors</span>
         </div>
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {conversations.map((conversation, index) => (
+          {conversations.filter(conversation => conversation && conversation.visitor).map((conversation, index) => {
+            // Safety check - skip if visitor is undefined
+            if (!conversation || !conversation.visitor) {
+              return null;
+            }
+            
+            return (
             <div
               key={`conversation-${conversation.visitor._id}-${index}`}
               className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
@@ -85,40 +91,40 @@ export default function RecentConversations({ conversations }: RecentConversatio
                 <div className="flex items-start space-x-3 flex-1">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 font-medium text-sm">
-                      {conversation.visitor.name ? conversation.visitor.name.charAt(0).toUpperCase() : 'A'}
+                      {conversation.visitor?.name ? conversation.visitor.name.charAt(0).toUpperCase() : 'A'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
                       <p className="font-medium text-gray-900 text-sm">
-                        {conversation.visitor.name || 'Anonymous'}
+                        {conversation.visitor?.name || 'Anonymous'}
                       </p>
-                      {conversation.visitor.isConverted && (
+                      {conversation.visitor?.isConverted && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Converted
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mb-1">
-                      {conversation.visitor.email}
+                      {conversation.visitor?.email || 'No email'}
                     </p>
-                    {conversation.visitor.phone && (
+                    {conversation.visitor?.phone && (
                       <p className="text-xs text-gray-500 mb-1">
                         📞 {conversation.visitor.phone}
                       </p>
                     )}
-                    {conversation.visitor.organization && (
+                    {conversation.visitor?.organization && (
                       <p className="text-xs text-gray-500 mb-1">
                         🏢 {conversation.visitor.organization}
                       </p>
                     )}
-                    {conversation.visitor.service && (
+                    {conversation.visitor?.service && (
                       <p className="text-xs text-blue-600 mb-1">
                         🔧 {conversation.visitor.service}
                       </p>
                     )}
                     <p className="text-xs text-gray-400">
-                      Joined: {formatTime(conversation.visitor.createdAt)}
+                      Joined: {conversation.visitor?.createdAt ? formatTime(conversation.visitor.createdAt) : 'Unknown'}
                     </p>
                   </div>
                 </div>
@@ -127,7 +133,7 @@ export default function RecentConversations({ conversations }: RecentConversatio
                     {conversation.lastMessageAt ? formatTime(conversation.lastMessageAt) : 'No messages'}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {conversation.messageCount} messages
+                    {conversation.messageCount || 0} messages
                   </p>
                 </div>
               </div>
@@ -171,7 +177,8 @@ export default function RecentConversations({ conversations }: RecentConversatio
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

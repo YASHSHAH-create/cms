@@ -85,7 +85,13 @@ export default function ExecutiveChatHistoryPage() {
         const responseData = await response.json();
         
         // The /api/visitors endpoint returns { total, page, pageSize, items }
-        const visitorsData = responseData.items || responseData;
+        let visitorsData = responseData.items || responseData;
+        
+        // Ensure visitorsData is always an array
+        if (!Array.isArray(visitorsData)) {
+          console.warn('visitorsData is not an array, setting to empty array');
+          visitorsData = [];
+        }
         
         // Check if we got valid data
         if (!visitorsData || visitorsData.length === 0) {
@@ -142,21 +148,17 @@ export default function ExecutiveChatHistoryPage() {
     loadConversation();
   }, [selectedVisitor, API_BASE, token]);
 
-  const filteredVisitors = visitors.filter(visitor =>
-    visitor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.service?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.subservice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.agentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.salesExecutiveName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.enquiryDetails?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.comments?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    visitor.source?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVisitors = Array.isArray(visitors) ? visitors.filter(visitor => {
+    if (!visitor) return false;
+    const search = searchTerm.toLowerCase();
+    return (
+      visitor.name?.toLowerCase().includes(search) ||
+      visitor.email?.toLowerCase().includes(search) ||
+      visitor.organization?.toLowerCase().includes(search) ||
+      visitor.phone?.toLowerCase().includes(search) ||
+      visitor.service?.toLowerCase().includes(search)
+    );
+  }) : [];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

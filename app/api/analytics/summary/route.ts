@@ -36,7 +36,7 @@ export async function GET() {
     ]);
 
     // Additional fallbacks (in case teams use booleans/dates instead of strings)
-    const [leadsByFlags] = await Promise.all([
+    const [leadsByFlags, convertedVisitors] = await Promise.all([
       Enquiry.countDocuments({
         $or: [
           { isConverted: true },
@@ -46,9 +46,29 @@ export async function GET() {
           { disposition: /won|converted|interested|booked/i },
         ],
       }),
+      // Count visitors with isConverted flag
+      Visitor.countDocuments({ 
+        $or: [
+          { isConverted: true },
+          { status: regexFromSet(LEAD_SET) }
+        ]
+      })
     ]);
 
-    const leads = Math.max(Number(leadsByStatus) || 0, Number(leadsByFlags) || 0);
+    // Take the maximum from all sources for most accurate count
+    const leads = Math.max(
+      Number(leadsByStatus) || 0, 
+      Number(leadsByFlags) || 0,
+      Number(convertedVisitors) || 0
+    );
+    
+    console.log('📊 Conversion calculation:', {
+      totalVisitors: totalVisitors,
+      leadsByStatus,
+      leadsByFlags,
+      convertedVisitors,
+      finalLeads: leads
+    });
     const pendingConversations = Number(pendingByStatus) || 0;
 
     const tot = Number(totalVisitors) || 0;
