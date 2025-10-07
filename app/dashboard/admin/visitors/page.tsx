@@ -27,6 +27,12 @@ type Visitor = {
   salesExecutiveName?: string;
   comments?: string;
   amount?: number;
+  pipelineHistory?: Array<{
+    status: string;
+    changedAt: string;
+    changedBy: string;
+    notes?: string;
+  }>;
 };
 
 // Pipeline stages for status filtering
@@ -101,6 +107,7 @@ export default function AdminVisitorsPage() {
   const [subserviceError, setSubserviceError] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [hasAutoAssignedSanjana, setHasAutoAssignedSanjana] = useState(false);
   
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState({
@@ -433,6 +440,34 @@ export default function AdminVisitorsPage() {
 
     return () => clearInterval(interval);
   }, [loadVisitors]);
+
+  // Auto-assign Sanjana Pawar as default agent to visitors without an agent (only once on page load)
+  useEffect(() => {
+    if (!hasAutoAssignedSanjana && agents.length > 0 && visitors.length > 0) {
+      const sanjanaAgent = agents.find(agent => 
+        (agent.name || agent.username || '').toLowerCase().includes('sanjana')
+      );
+      
+      if (sanjanaAgent) {
+        console.log('✅ Found Sanjana agent:', sanjanaAgent);
+        
+        // Find visitors without an agent
+        const visitorsWithoutAgent = visitors.filter(visitor => !visitor.agentName && !visitor.assignedAgent);
+        
+        if (visitorsWithoutAgent.length > 0) {
+          console.log(`🔄 Auto-assigning Sanjana to ${visitorsWithoutAgent.length} visitors without agent`);
+          
+          // Assign Sanjana to all visitors without an agent
+          visitorsWithoutAgent.forEach(visitor => {
+            assignAgentToVisitor(visitor._id, sanjanaAgent._id || sanjanaAgent.id, sanjanaAgent.name || sanjanaAgent.username || 'Sanjana Pawar');
+          });
+          
+          // Mark that we've done the auto-assignment
+          setHasAutoAssignedSanjana(true);
+        }
+      }
+    }
+  }, [agents, visitors, hasAutoAssignedSanjana]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1915,7 +1950,10 @@ export default function AdminVisitorsPage() {
                    Pipeline Tracking: {selectedVisitor.name || 'Anonymous'}
                  </h3>
                  <button
-                   onClick={() => setShowPipeline(false)}
+                   onClick={() => {
+                     setShowPipeline(false);
+                     setChatMessages([]);
+                   }}
                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
                  >
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1932,6 +1970,7 @@ export default function AdminVisitorsPage() {
                                <PipelineFlowchart
                                  currentStatus={selectedVisitor.status}
                                  onStatusChange={(status, notes) => updateVisitorStatus(selectedVisitor._id, status, notes)}
+                                 pipelineHistory={selectedVisitor.pipelineHistory || []}
                                  className="w-full"
                                />
                              </div>
@@ -2011,7 +2050,10 @@ export default function AdminVisitorsPage() {
                              {/* Action Buttons */}
                              <div className="mt-8 flex justify-end space-x-4">
                                <button
-                                 onClick={() => setShowPipeline(false)}
+                                 onClick={() => {
+                                   setShowPipeline(false);
+                                   setChatMessages([]);
+                                 }}
                                  className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium"
                                >
                                  Close

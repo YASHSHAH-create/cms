@@ -3,12 +3,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import DashboardHeader from '@/components/DashboardHeader';
 import AdminUserEditor from '@/components/AdminUserEditor';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -18,6 +21,9 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -581,31 +587,40 @@ export default function AdminAgentsPage() {
 
   const totalAgents = users.filter(user => ['executive', 'sales-executive', 'customer-executive'].includes(user.role)).length;
   const executiveUsers = users.filter(user => ['executive', 'sales-executive', 'customer-executive'].includes(user.role));
+  const salesExecutives = users.filter(user => user.role === 'sales-executive').length;
+  const customerExecutives = users.filter(user => user.role === 'customer-executive').length;
+  const activeAgents = users.filter(user => ['executive', 'sales-executive', 'customer-executive'].includes(user.role) && user.isActive).length;
+  
+  // Calculate totals
+  const totalVisitors = agentPerformance.reduce((sum, perf) => sum + perf.visitorsHandled, 0);
+  const totalEnquiries = agentPerformance.reduce((sum, perf) => sum + perf.enquiriesAdded, 0);
+  const totalLeads = agentPerformance.reduce((sum, perf) => sum + perf.leadsConverted, 0);
+  const conversionRate = totalVisitors > 0 ? ((totalLeads / totalVisitors) * 100).toFixed(1) : '0';
 
-  // Chart data
+  // Bar Chart data - Performance comparison
   const chartData = {
     labels: agentPerformance.map(perf => perf.agentName),
     datasets: [
       {
         label: 'Visitors',
         data: agentPerformance.map(perf => perf.visitorsHandled),
-        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        backgroundColor: 'rgba(59, 130, 246, 0.7)',
         borderColor: 'rgba(59, 130, 246, 1)',
-        borderWidth: 1,
+        borderWidth: 2,
       },
       {
         label: 'Enquiries',
         data: agentPerformance.map(perf => perf.enquiriesAdded),
-        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+        backgroundColor: 'rgba(16, 185, 129, 0.7)',
         borderColor: 'rgba(16, 185, 129, 1)',
-        borderWidth: 1,
+        borderWidth: 2,
       },
       {
         label: 'Leads',
         data: agentPerformance.map(perf => perf.leadsConverted),
-        backgroundColor: 'rgba(245, 158, 11, 0.5)',
+        backgroundColor: 'rgba(245, 158, 11, 0.7)',
         borderColor: 'rgba(245, 158, 11, 1)',
-        borderWidth: 1,
+        borderWidth: 2,
       },
     ],
   };
@@ -616,6 +631,14 @@ export default function AdminAgentsPage() {
     plugins: {
       legend: {
         position: 'top' as const,
+        labels: {
+          font: {
+            size: 12,
+            weight: 'bold' as const
+          },
+          padding: 15,
+          usePointStyle: true
+        }
       },
       title: {
         display: false,
@@ -624,7 +647,131 @@ export default function AdminAgentsPage() {
     scales: {
       y: {
         beginAtZero: true,
+        ticks: {
+          font: {
+            size: 11
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        }
       },
+      x: {
+        ticks: {
+          font: {
+            size: 11
+          }
+        },
+        grid: {
+          display: false
+        }
+      }
+    },
+  };
+
+  // Doughnut Chart - Agent Role Distribution
+  const roleDistributionData = {
+    labels: ['Sales Executives', 'Customer Executives', 'Other Executives'],
+    datasets: [
+      {
+        data: [salesExecutives, customerExecutives, totalAgents - salesExecutives - customerExecutives],
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+        ],
+        borderColor: [
+          'rgba(59, 130, 246, 1)',
+          'rgba(16, 185, 129, 1)',
+          'rgba(245, 158, 11, 1)',
+        ],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          font: {
+            size: 12,
+            weight: 'bold' as const
+          },
+          padding: 15,
+          usePointStyle: true
+        }
+      },
+    },
+  };
+
+  // Line Chart - Performance Trends
+  const performanceTrendData = {
+    labels: agentPerformance.map(perf => perf.agentName),
+    datasets: [
+      {
+        label: 'Conversion Rate (%)',
+        data: agentPerformance.map(perf => 
+          perf.visitorsHandled > 0 ? ((perf.leadsConverted / perf.visitorsHandled) * 100).toFixed(1) : 0
+        ),
+        borderColor: 'rgba(147, 51, 234, 1)',
+        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: 'rgba(147, 51, 234, 1)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          font: {
+            size: 12,
+            weight: 'bold' as const
+          },
+          padding: 15,
+          usePointStyle: true
+        }
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          callback: function(value: any) {
+            return value + '%';
+          },
+          font: {
+            size: 11
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)'
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            size: 11
+          }
+        },
+        grid: {
+          display: false
+        }
+      }
     },
   };
 
@@ -670,35 +817,92 @@ export default function AdminAgentsPage() {
           {/* Agents Tab Content */}
           {activeTab === 'agents' && (
             <>
-          {/* Action Boxes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          {/* Enhanced Stat Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                {/* Total Agents */}
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-black">Total Agents</h3>
-                      <p className="text-3xl font-bold text-blue-600">{totalAgents || 0}</p>
+                  <p className="text-blue-100 text-sm font-medium mb-1">Total Agents</p>
+                      <p className="text-4xl font-bold">{totalAgents || 0}</p>
+                      <p className="text-blue-100 text-xs mt-2">{activeAgents} active</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-xl">👥</span>
+                <div className="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
               </div>
             </div>
 
-            <button
-              onClick={() => setShowAddAgent(true)}
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-black">Add Agents</h3>
-                  <p className="text-black">Create new agent accounts</p>
+                {/* Total Visitors Handled */}
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium mb-1">Total Visitors</p>
+                      <p className="text-4xl font-bold">{totalVisitors}</p>
+                      <p className="text-green-100 text-xs mt-2">Handled by agents</p>
+                    </div>
+                    <div className="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-xl">➕</span>
+
+                {/* Total Enquiries */}
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm font-medium mb-1">Total Enquiries</p>
+                      <p className="text-4xl font-bold">{totalEnquiries}</p>
+                      <p className="text-purple-100 text-xs mt-2">From {totalVisitors} visitors</p>
+                    </div>
+                    <div className="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </button>
+
+                {/* Conversion Rate */}
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 rounded-xl shadow-lg text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-amber-100 text-sm font-medium mb-1">Conversion Rate</p>
+                      <p className="text-4xl font-bold">{conversionRate}%</p>
+                      <p className="text-amber-100 text-xs mt-2">{totalLeads} leads converted</p>
+                    </div>
+                    <div className="w-14 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
           </div>
+
+              {/* Add Agent Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowAddAgent(true)}
+                  className="w-full bg-white p-6 rounded-xl shadow-sm border-2 border-dashed border-gray-300 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-500 rounded-lg flex items-center justify-center transition-colors">
+                      <svg className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Add New Agent</h3>
+                      <p className="text-sm text-gray-600">Create new agent accounts for your team</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
 
           {loading && (
             <div className="flex items-center justify-center h-64">
@@ -725,11 +929,101 @@ export default function AdminAgentsPage() {
           )}
 
               {!loading && !error && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Agents Table */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <>
+                  {/* Charts Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    {/* Bar Chart - Performance Overview */}
+                    <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                        </div>
+                        Performance Overview
+                      </h2>
+                      <div className="h-80">
+                        {agentPerformance.length > 0 ? (
+                          <Bar data={chartData} options={chartOptions} />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                              <p className="text-gray-500 font-medium">No performance data available</p>
+                              <p className="text-gray-400 text-sm mt-1">Agent performance metrics will appear here</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Doughnut Chart - Role Distribution */}
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                          </svg>
+                        </div>
+                        Role Distribution
+                      </h2>
+                      <div className="h-80 flex items-center justify-center">
+                        {totalAgents > 0 ? (
+                          <Doughnut data={roleDistributionData} options={doughnutOptions} />
+                        ) : (
+                          <div className="text-center">
+                            <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            </svg>
+                            <p className="text-gray-500 font-medium">No agents</p>
+                            <p className="text-gray-400 text-sm">Add agents to see distribution</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Chart - Conversion Trends */}
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
+                      </div>
+                      Agent Conversion Rate Performance
+                    </h2>
+                    <div className="h-80">
+                      {agentPerformance.length > 0 ? (
+                        <Line data={performanceTrendData} options={lineChartOptions} />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                            </svg>
+                            <p className="text-gray-500 font-medium">No conversion data available</p>
+                            <p className="text-gray-400 text-sm mt-1">Conversion trends will appear here</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Agents Performance Table */}
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-200">
                   <div className="p-6 h-full flex flex-col">
-                    <h2 className="text-lg font-semibold text-black mb-4">Agent Performance</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      </div>
+                      Detailed Agent Performance
+                    </h2>
                     
             <div className="overflow-x-auto flex-1">
                       <table className="w-full h-full">
@@ -885,35 +1179,7 @@ export default function AdminAgentsPage() {
                     )}
                 </div>
               </div>
-
-              {/* Performance Chart */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div className="p-6 h-full flex flex-col">
-                      <h2 className="text-lg font-semibold text-black mb-4">Performance Overview</h2>
-                      <div className="flex-1 flex items-center justify-center">
-                        {agentPerformance.length > 0 ? (
-                          <Bar data={chartData} options={chartOptions} />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-black">
-                            No agents to display
-                      </div>
-                    )}
-                  </div>
-                      {executiveUsers && executiveUsers.length > 0 && (
-                    <div className="mt-3 text-xs text-gray-600">
-                          {executiveUsers.slice(0, 3).map((user: User, index: number) => (
-                            <div key={`chart-user-${user.id}-${index}`} className="flex items-center space-x-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              <span>
-                                {user.name || user.username}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                </>
           )}
             </>
           )}
