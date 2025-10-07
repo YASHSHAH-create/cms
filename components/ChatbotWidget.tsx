@@ -168,7 +168,7 @@ interface ChatbotWidgetProps {
   isIframe?: boolean;
 }
 
-export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) {
+export default function ChatbotWidget({ isOpen, onToggle, isIframe = false }: ChatbotWidgetProps) {
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -1069,10 +1069,15 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
 
   if (!isOpen) return null;
 
+  // Iframe mode: fixed dimensions with border and shadow
+  const containerClasses = isIframe 
+    ? "w-full h-full bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col font-poppins overflow-hidden"
+    : "fixed top-20 bottom-20 right-6 w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 overflow-hidden font-poppins flex flex-col backdrop-blur-sm bg-white/95";
+
   return (
-    <div className="fixed top-20 bottom-20 right-6 w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 overflow-hidden font-poppins flex flex-col backdrop-blur-sm bg-white/95">
+    <div className={containerClasses}>
       {/* Enhanced Header */}
-      <div className="text-white p-5 bg-gradient-to-r from-[#2d4891] to-[#1e3a8a] rounded-t-3xl">
+      <div className={`text-white p-5 bg-gradient-to-r from-[#2d4891] to-[#1e3a8a] ${isIframe ? 'rounded-t-2xl' : 'rounded-t-3xl'}`}>
         <div className="flex items-center justify-between">
           <button className="text-white/80 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-white/10">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1082,14 +1087,16 @@ export default function ChatbotWidget({ isOpen, onToggle }: ChatbotWidgetProps) 
           <div className="flex items-center justify-center flex-1">
             <Image src="/envirocare-logo.png" alt="Envirocare Labs" width={160} height={40} className="drop-shadow-sm" />
           </div>
-          <button
-            onClick={onToggle}
-            className="text-white/80 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-white/10"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {!isIframe && (
+            <button
+              onClick={onToggle}
+              className="text-white/80 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-white/10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
