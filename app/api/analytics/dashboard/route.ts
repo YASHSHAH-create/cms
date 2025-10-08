@@ -64,8 +64,8 @@ async function getDashboardData(request: NextRequest, user: any) {
 
     // Create chat history
     const chatHistory = visitors
-      .filter(v => messagesByVisitor[v._id.toString()]?.length > 0)
-      .map(v => ({
+      .filter((v: any) => messagesByVisitor[v._id.toString()]?.length > 0)
+      .map((v: any) => ({
         visitor: {
           _id: v._id.toString(),
           name: v.name || 'Anonymous',
@@ -84,7 +84,7 @@ async function getDashboardData(request: NextRequest, user: any) {
       }));
 
     const unifiedData = {
-      visitors: visitors.map(v => ({
+      visitors: visitors.map((v: any) => ({
         _id: v._id.toString(),
         name: v.name || 'Anonymous',
         email: v.email || '',
@@ -97,7 +97,7 @@ async function getDashboardData(request: NextRequest, user: any) {
         lastInteractionAt: v.lastInteractionAt,
         isConverted: v.isConverted || false
       })),
-      enquiries: enquiries.map(e => ({
+      enquiries: enquiries.map((e: any) => ({
         _id: e._id.toString(),
         visitorName: e.visitorName || '',
         email: e.email || '',
