@@ -13,74 +13,38 @@ import { generateQuotationNo } from '@/lib/quotation-calculations'
 import { FileText, TrendingUp, CheckCircle, Clock } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/useAuth'
 
-// Mock data for demonstration
-const mockQuotations: SavedQuotation[] = [
-  {
-    id: '1',
-    quotationNo: 'Q-2024-0001',
-    date: '2024-01-15',
-    customerName: 'ABC Manufacturing Ltd.',
-    contactPerson: 'Mr. Rajesh Kumar',
-    totalAmount: 125000,
-    status: 'approved',
-    createdAt: '2024-01-15T10:30:00Z',
-    lastModified: '2024-01-16T14:20:00Z',
-  },
-  {
-    id: '2',
-    quotationNo: 'Q-2024-0002',
-    date: '2024-01-18',
-    customerName: 'XYZ Industries Pvt. Ltd.',
-    contactPerson: 'Ms. Priya Sharma',
-    totalAmount: 89500,
-    status: 'sent',
-    createdAt: '2024-01-18T09:15:00Z',
-    lastModified: '2024-01-18T09:15:00Z',
-  },
-  {
-    id: '3',
-    quotationNo: 'Q-2024-0003',
-    date: '2024-01-20',
-    customerName: 'Green Earth Solutions',
-    contactPerson: 'Dr. Amit Patel',
-    totalAmount: 156000,
-    status: 'draft',
-    createdAt: '2024-01-20T16:45:00Z',
-    lastModified: '2024-01-21T11:30:00Z',
-  },
-  {
-    id: '4',
-    quotationNo: 'Q-2024-0004',
-    date: '2024-01-22',
-    customerName: 'Tech Solutions India',
-    contactPerson: 'Mr. Sanjay Mehta',
-    totalAmount: 67800,
-    status: 'rejected',
-    createdAt: '2024-01-22T13:20:00Z',
-    lastModified: '2024-01-23T10:15:00Z',
-  },
-  {
-    id: '5',
-    quotationNo: 'Q-2024-0005',
-    date: '2024-01-25',
-    customerName: 'EcoTest Laboratories',
-    contactPerson: 'Ms. Neha Singh',
-    totalAmount: 234500,
-    status: 'sent',
-    createdAt: '2024-01-25T08:00:00Z',
-    lastModified: '2024-01-25T08:00:00Z',
-  },
-]
-
 export default function QuotationsPage() {
   const router = useRouter()
   const { user, isAuthenticated, loading } = useAuth()
-  const [quotations, setQuotations] = useState<SavedQuotation[]>(mockQuotations)
+  const [quotations, setQuotations] = useState<SavedQuotation[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
   const [selectedQuotationId, setSelectedQuotationId] = useState<string>()
   const [previewQuotation, setPreviewQuotation] = useState<QuotationDraft | null>(null)
+
+  // Load quotations from localStorage on mount
+  useEffect(() => {
+    const savedQuotations = localStorage.getItem('envirocare_quotations')
+    if (savedQuotations) {
+      try {
+        const parsed = JSON.parse(savedQuotations)
+        setQuotations(Array.isArray(parsed) ? parsed : [])
+        console.log('📄 Loaded quotations from localStorage:', parsed.length)
+      } catch (e) {
+        console.error('Error parsing saved quotations:', e)
+        setQuotations([])
+      }
+    }
+  }, [])
+
+  // Save quotations to localStorage whenever they change
+  useEffect(() => {
+    if (quotations.length >= 0) {
+      localStorage.setItem('envirocare_quotations', JSON.stringify(quotations))
+      console.log('💾 Saved quotations to localStorage:', quotations.length)
+    }
+  }, [quotations])
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -161,65 +125,11 @@ export default function QuotationsPage() {
   }
 
   const handleTablePreview = (quotation: any) => {
-    // In a real app, fetch the full quotation data
-    // For now, create a mock draft from saved quotation
-    const mockDraft: QuotationDraft = {
-      quotationNo: quotation.quotationNo,
-      date: quotation.date,
-      billTo: {
-        name: quotation.customerName,
-        address1: '123 Business Street',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        pin: '400001',
-        email: 'contact@example.com',
-        phone: '+91 98765 43210',
-      },
-      shipTo: {
-        name: quotation.customerName,
-      },
-      contact: {
-        name: quotation.contactPerson,
-        email: 'contact@example.com',
-        phone: '+91 98765 43210',
-      },
-      items: [
-        {
-          id: '1',
-          sNo: 1,
-          sampleName: 'Water Quality Analysis',
-          testParameters: 'pH, TDS, Hardness, BOD, COD',
-          noOfSamples: 5,
-          unitPrice: 2500,
-          total: 12500,
-        },
-      ],
-      additionalCharges: [],
-      subtotal: 12500,
-      taxes: {
-        cgstRate: 9,
-        sgstRate: 9,
-        cgstAmount: 1125,
-        sgstAmount: 1125,
-      },
-      grandTotal: quotation.totalAmount,
-      amountInWords: '',
-      preparedBy: {
-        name: 'Admin User',
-        email: 'admin@envirocare.com',
-        phone: '+91 98765 43210',
-      },
-      bankDetails: {
-        accountName: 'Envirocare Environmental Services',
-        accountNumber: '1234567890123456',
-        ifsc: 'HDFC0001234',
-        bankNameBranch: 'HDFC Bank, Mumbai Branch',
-        accountType: 'Current',
-      },
-      terms: '1. This quotation is valid for 30 days from the date of issue.\n2. Payment terms: 50% advance, 50% on completion.\n3. All prices are exclusive of applicable taxes.',
-    }
-    setPreviewQuotation(mockDraft)
-    setIsPreviewOpen(true)
+    // Preview functionality - would fetch full quotation data from backend in production
+    // For now, just open the edit modal in view mode
+    setModalMode('view')
+    setSelectedQuotationId(quotation.id)
+    setIsModalOpen(true)
   }
 
   if (loading) {
@@ -281,12 +191,30 @@ export default function QuotationsPage() {
             />
             <StatCard
               title="Total Value"
-              value={`₹${(stats.totalValue / 100000).toFixed(1)}L`}
+              value={stats.totalValue > 0 ? `₹${(stats.totalValue / 100000).toFixed(1)}L` : '₹0'}
               icon={<TrendingUp className="w-6 h-6" />}
               color="from-purple-500 to-purple-600"
               bgColor="bg-purple-50"
             />
           </div>
+
+          {/* Info Banner when no quotations */}
+          {quotations.length === 0 && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Welcome to Quotation Management!</strong> Create your first quotation by clicking the "New Quotation" button.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quotations Table Card */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
